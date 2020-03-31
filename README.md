@@ -1,2 +1,3 @@
-# zkits-logger
-ZKits Logger Library.
+# ZKits Logger Library #
+
+This package is a library of ZKits.
