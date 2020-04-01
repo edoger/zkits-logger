@@ -10,7 +10,6 @@
 
 # Output of the go coverage tool
 *.out
-coverage.txt
 
 # MacOS
 *~
