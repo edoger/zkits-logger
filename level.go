@@ -20,13 +20,26 @@ import (
 )
 
 const (
-	PanicLevel Level = 0x1 << iota
-	FatalLevel Level = 0x1 << iota
-	ErrorLevel Level = 0x1 << iota
-	WarnLevel  Level = 0x1 << iota
-	InfoLevel  Level = 0x1 << iota
-	DebugLevel Level = 0x1 << iota
-	TraceLevel Level = 0x1 << iota
+	// PanicLevel indicates a very serious event at the highest level.
+	// When the log is written, panic will be triggered automatically.
+	PanicLevel Level = iota + 1
+	// FatalLevel indicates that an event occurred that the application
+	// cannot continue to run. When the log is written, the exit function
+	// will be called automatically.
+	FatalLevel
+	// ErrorLevel indicates that an event occurred within the application
+	// but does not affect continued operation.
+	ErrorLevel
+	// WarnLevel indicates that a noteworthy event has occurred inside
+	// the application.
+	WarnLevel
+	// InfoLevel represents some general information events.
+	InfoLevel
+	// DebugLevel represents some informational events for debugging, and
+	// very verbose logging.
+	DebugLevel
+	// TraceLevel represents the finest granular information event.
+	TraceLevel
 )
 
 // All supported log levels.
@@ -54,7 +67,7 @@ func (level Level) String() string {
 
 // Determines whether the current log level is a valid value.
 func (level Level) IsValid() bool {
-	return iLevels[level] != ""
+	return level >= 1 && level <= 7
 }
 
 // Parses the log level from the given string.
