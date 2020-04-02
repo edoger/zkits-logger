@@ -63,8 +63,10 @@ func (o *logger) GetLevel() Level {
 func (o *logger) SetLevel(level Level) Logger {
 	o.log.common.mutex.Lock()
 	defer o.log.common.mutex.Unlock()
-
-	o.log.common.level = level
+	// Invalid level will be ignored.
+	if level.IsValid() {
+		o.log.common.level = level
+	}
 	return o
 }
 
