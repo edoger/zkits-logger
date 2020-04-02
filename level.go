@@ -15,7 +15,7 @@
 package logger
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -29,29 +29,32 @@ const (
 	TraceLevel Level = 0x1 << iota
 )
 
+// All supported log levels.
+var iLevels = map[Level]string{
+	PanicLevel: "panic",
+	FatalLevel: "fatal",
+	ErrorLevel: "error",
+	WarnLevel:  "warn",
+	InfoLevel:  "info",
+	DebugLevel: "debug",
+	TraceLevel: "trace",
+}
+
 // The log level type.
 type Level uint32
 
 // Gets the string form of the current log level.
+// If the log level is not supported, always returns "unknown".
 func (level Level) String() string {
-	switch level {
-	case PanicLevel:
-		return "panic"
-	case FatalLevel:
-		return "fatal"
-	case ErrorLevel:
-		return "error"
-	case WarnLevel:
-		return "warn"
-	case InfoLevel:
-		return "info"
-	case DebugLevel:
-		return "debug"
-	case TraceLevel:
-		return "trace"
-	default:
-		return "unknown"
+	if s, found := iLevels[level]; found {
+		return s
 	}
+	return "unknown"
+}
+
+// Determines whether the current log level is a valid value.
+func (level Level) IsValid() bool {
+	return iLevels[level] != ""
 }
 
 // Parses the log level from the given string.
@@ -72,7 +75,8 @@ func ParseLevel(s string) (Level, error) {
 	case "trace":
 		return TraceLevel, nil
 	default:
-		return 0, errors.New("invalid logger level string: " + s)
+		// A level zero value is not a supported level.
+		return 0, fmt.Errorf(`invalid log level string "%s"`, s)
 	}
 }
 

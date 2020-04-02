@@ -19,36 +19,31 @@ import (
 )
 
 func TestLevel_String(t *testing.T) {
-	levels := map[Level]string{
-		PanicLevel: "panic",
-		FatalLevel: "fatal",
-		ErrorLevel: "error",
-		WarnLevel:  "warn",
-		InfoLevel:  "info",
-		DebugLevel: "debug",
-		TraceLevel: "trace",
-		Level(0):   "unknown",
-	}
-
-	for level, s := range levels {
+	for level, s := range iLevels {
 		if got := level.String(); got != s {
 			t.Fatalf("%s != %s", s, got)
 		}
 	}
+
+	if got := Level(0).String(); got != "unknown" {
+		t.Fatalf("unknown != %s", got)
+	}
+}
+
+func TestLevel_IsValid(t *testing.T) {
+	for level := range iLevels {
+		if !level.IsValid() {
+			t.Fatalf("Level(%d).IsValid() return false", level)
+		}
+	}
+
+	if Level(0).IsValid() {
+		t.Fatal("Level(0).IsValid() return true")
+	}
 }
 
 func TestParseLevel(t *testing.T) {
-	levels := map[Level]string{
-		PanicLevel: "panic",
-		FatalLevel: "fatal",
-		ErrorLevel: "error",
-		WarnLevel:  "warn",
-		InfoLevel:  "info",
-		DebugLevel: "debug",
-		TraceLevel: "trace",
-	}
-
-	for level, s := range levels {
+	for level, s := range iLevels {
 		got, err := ParseLevel(s)
 		if err != nil {
 			t.Fatal(err)
@@ -67,25 +62,13 @@ func TestParseLevel(t *testing.T) {
 	}
 }
 
-func TestMustParseLevel_Success(t *testing.T) {
-	levels := map[Level]string{
-		PanicLevel: "panic",
-		FatalLevel: "fatal",
-		ErrorLevel: "error",
-		WarnLevel:  "warn",
-		InfoLevel:  "info",
-		DebugLevel: "debug",
-		TraceLevel: "trace",
-	}
-
-	for level, s := range levels {
+func TestMustParseLevel(t *testing.T) {
+	for level, s := range iLevels {
 		if got := MustParseLevel(s); got != level {
 			t.Fatalf("%d != %d", got, level)
 		}
 	}
-}
 
-func TestMustParseLevel_Panic(t *testing.T) {
 	call := func(f func()) (v interface{}) {
 		defer func() { v = recover() }()
 		f()
