@@ -16,6 +16,7 @@ package logger
 
 import (
 	"bytes"
+	"context"
 	"time"
 )
 
@@ -30,6 +31,7 @@ type Summary interface {
 	Message() string                  // Get the message of the log.
 	Fields() map[string]interface{}   // Get the bound data of the log.
 	Field(string) (interface{}, bool) // Query the bound data of the log.
+	Context() context.Context         // Get the context of the log.
 }
 
 // Implementation of Summary interface.
@@ -40,6 +42,7 @@ type summary struct {
 	time    time.Time
 	buffer  *bytes.Buffer
 	fields  map[string]interface{}
+	ctx     context.Context
 }
 
 // Get the name of the logger.
@@ -88,4 +91,12 @@ func (o *summary) Field(key string) (value interface{}, found bool) {
 		value, found = o.fields[key]
 	}
 	return
+}
+
+// Get the context of the log.
+func (o *summary) Context() context.Context {
+	if o.ctx == nil {
+		return context.Background()
+	}
+	return o.ctx
 }

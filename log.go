@@ -16,6 +16,7 @@ package logger
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -37,6 +38,9 @@ type Log interface {
 	// Add extra data to the current log.
 	// This method will return a new log instance.
 	WithFields(map[string]interface{}) Log
+	// Add context to the current log.
+	// This method will return a new log instance.
+	WithContext(context.Context) Log
 	// Record the current log and specify the level.
 	Log(Level, ...interface{})
 	Logln(Level, ...interface{})
@@ -118,6 +122,8 @@ type log struct {
 	*common
 	// Bind data for the current log.
 	fields map[string]interface{}
+	// Bind context for the current log.
+	ctx context.Context
 }
 
 // Add an extra data to the current log.
@@ -138,11 +144,26 @@ func (o *log) WithFields(fields map[string]interface{}) Log {
 	r := &log{
 		common: o.common,
 		fields: make(map[string]interface{}, len(o.fields)+len(fields)),
+		ctx:    o.ctx,
 	}
 	for k, v := range o.fields {
 		r.fields[k] = v
 	}
 	for k, v := range fields {
+		r.fields[k] = v
+	}
+	return r
+}
+
+// Add context to the current log.
+// This method will return a new log instance.
+func (o *log) WithContext(ctx context.Context) Log {
+	r := &log{
+		common: o.common,
+		fields: make(map[string]interface{}, len(o.fields)),
+		ctx:    ctx,
+	}
+	for k, v := range o.fields {
 		r.fields[k] = v
 	}
 	return r
@@ -185,6 +206,7 @@ func (o *log) log(level Level, message string) {
 	su.message = message
 	su.time = now
 	su.buffer = buffer
+	su.ctx = o.ctx
 	su.fields = make(map[string]interface{}, len(o.fields))
 	for k, v := range o.fields {
 		su.fields[k] = v
