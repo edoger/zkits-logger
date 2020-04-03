@@ -17,6 +17,8 @@ package logger
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -305,6 +307,10 @@ func TestLogger_Log(t *testing.T) {
 
 	var exitCode int
 
+	g.WithExitFunc(nil)
+	if g.(*logger).log.common.exit == nil {
+		t.Fatalf(`Logger.WithExitFunc(nil)`)
+	}
 	g.WithExitFunc(func(i int) { exitCode = i })
 
 	checkExit := func(code int) {
@@ -394,5 +400,200 @@ func TestLogger_Log(t *testing.T) {
 		call(func() { g.Panicf("bar-%d", 1) })
 		check(o, "bar-1", PanicLevel)
 		checkPanic()
+	})
+}
+
+func TestLogger_With(t *testing.T) {
+	w := new(bytes.Buffer)
+	g := New("test")
+	g.SetOutput(w)
+	g.SetLevel(TraceLevel)
+
+	type O struct {
+		Level   string                 `json:"level"`
+		Logger  string                 `json:"logger"`
+		Message string                 `json:"message"`
+		Time    string                 `json:"time"`
+		Fields  map[string]interface{} `json:"fields"`
+	}
+
+	var o *O
+
+	check := func(o *O, fields map[string]interface{}) {
+		if err := json.Unmarshal(w.Bytes(), o); err != nil {
+			t.Fatal(err)
+		}
+		if o.Level != InfoLevel.String() {
+			t.Fatal(o.Level)
+		}
+		if o.Logger != "test" {
+			t.Fatal(o.Logger)
+		}
+		if o.Message != "test" {
+			t.Fatal(o.Message)
+		}
+		if _, err := time.Parse("2006-01-02 15:04:05", o.Time); err != nil {
+			t.Fatal(err)
+		}
+
+		got := fmt.Sprint(o.Fields)
+		want := fmt.Sprint(fields)
+		if got != want {
+			t.Fatal(o.Fields, fields)
+		}
+	}
+
+	do := func(f func()) {
+		w.Reset()
+		o = new(O)
+		f()
+	}
+
+	do(func() {
+		l := g.WithField("key", 1)
+		if l == nil {
+			t.Fatal("Logger.WithField() return nil")
+		}
+		l.Info("test")
+		check(o, map[string]interface{}{"key": 1})
+	})
+
+	do(func() {
+		l := g.WithField("key", 1).WithField("key2", 2)
+		if l == nil {
+			t.Fatal("Log.WithField() return nil")
+		}
+		l.Info("test")
+		check(o, map[string]interface{}{"key": 1, "key2": 2})
+	})
+
+	do(func() {
+		l := g.WithError(errors.New("error"))
+		if l == nil {
+			t.Fatal("Logger.WithError() return nil")
+		}
+		l.Info("test")
+		check(o, map[string]interface{}{"error": "error"})
+	})
+
+	do(func() {
+		l := g.WithField("key", 1).WithError(errors.New("error"))
+		if l == nil {
+			t.Fatal("Log.WithError() return nil")
+		}
+		l.Info("test")
+		check(o, map[string]interface{}{"key": 1, "error": "error"})
+	})
+
+	do(func() {
+		l := g.WithFields(map[string]interface{}{
+			"key": 1,
+			"foo": "foo",
+			"err": errors.New("error"),
+		})
+		if l == nil {
+			t.Fatal("Logger.WithFields() return nil")
+		}
+		l.Info("test")
+		check(o, map[string]interface{}{
+			"key": 1,
+			"foo": "foo",
+			"err": "error",
+		})
+	})
+
+	do(func() {
+		l := g.WithField("key", 1).WithFields(map[string]interface{}{
+			"foo": "foo",
+			"err": errors.New("error"),
+		})
+		if l == nil {
+			t.Fatal("Log.WithFields() return nil")
+		}
+		l.Info("test")
+		check(o, map[string]interface{}{
+			"key": 1,
+			"foo": "foo",
+			"err": "error",
+		})
+	})
+}
+
+func TestLogger_Hook(t *testing.T) {
+	w := new(bytes.Buffer)
+	g := New("test")
+	g.SetOutput(w)
+	g.SetLevel(TraceLevel)
+
+	var su Summary
+
+	g.WithHook([]Level{TraceLevel}, func(s Summary) error {
+		su = s
+		return nil
+	})
+
+	check := func(d []byte, s Summary, level Level, fields map[string]interface{}) {
+		if want, got := string(d), s.String(); want != got {
+			t.Fatal(want, got)
+		}
+		if want, got := string(d), string(s.Bytes()); want != got {
+			t.Fatal(want, got)
+		}
+		if s.Level() != level {
+			t.Fatal(s.Level())
+		}
+		if s.Name() != "test" {
+			t.Fatal(s.Name())
+		}
+		if s.Message() != "test" {
+			t.Fatal(s.Message())
+		}
+		if s.Time().IsZero() {
+			t.Fatal(s.Time())
+		}
+		if s.Size() != len(d) {
+			t.Fatal(s.Size(), len(d))
+		}
+		if want, got := fmt.Sprint(fields), fmt.Sprint(s.Fields()); want != got {
+			t.Fatal(want, got)
+		}
+		if v, found := s.Field("key"); !found {
+			t.Fatal("Not found key")
+		} else {
+			want, got := fmt.Sprint(v), fmt.Sprint(1)
+			if want != got {
+				t.Fatal(want, got)
+			}
+		}
+	}
+
+	do := func(f func()) {
+		w.Reset()
+		su = nil
+		f()
+	}
+
+	do(func() {
+		g.WithField("key", 1).Trace("test")
+		if su == nil {
+			t.Fatal("Hook no exec")
+		}
+		check(w.Bytes(), su, TraceLevel, map[string]interface{}{"key": 1})
+	})
+
+	do(func() {
+		g.WithField("key", 1).Debug("test")
+		if su != nil {
+			t.Fatal("Hook exec")
+		}
+	})
+
+	g.SetLevel(DebugLevel)
+
+	do(func() {
+		g.WithField("key", 1).Trace("test")
+		if su != nil {
+			t.Fatal("Hook exec")
+		}
 	})
 }
