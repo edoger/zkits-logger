@@ -92,11 +92,10 @@ func TestLogger_Output(t *testing.T) {
 	}
 }
 
-func TestLogger_Log_Trace_Print(t *testing.T) {
+func TestLogger_Log(t *testing.T) {
 	w := new(bytes.Buffer)
 	g := New("test")
 	g.SetOutput(w)
-	g.SetLevel(TraceLevel)
 
 	type O struct {
 		Level   string                 `json:"level"`
@@ -108,15 +107,11 @@ func TestLogger_Log_Trace_Print(t *testing.T) {
 
 	var o *O
 
-	reset := func() {
-		w.Reset()
-		o = new(O)
-	}
-	check := func(o *O, message string) {
+	check := func(o *O, message string, level Level) {
 		if err := json.Unmarshal(w.Bytes(), o); err != nil {
 			t.Fatal(err)
 		}
-		if o.Level != TraceLevel.String() {
+		if o.Level != level.String() {
 			t.Fatal(o.Level)
 		}
 		if o.Logger != "test" {
@@ -132,40 +127,59 @@ func TestLogger_Log_Trace_Print(t *testing.T) {
 			t.Fatal(o.Fields)
 		}
 	}
-
-	reset()
-	g.Trace("foo")
-	check(o, "foo")
-
-	reset()
-	g.Traceln("bar")
-	check(o, "bar")
-
-	reset()
-	g.Tracef("bar-%d", 1)
-	check(o, "bar-1")
-
-	reset()
-	g.Print("foo")
-	check(o, "foo")
-
-	reset()
-	g.Println("bar")
-	check(o, "bar")
-
-	reset()
-	g.Printf("bar-%d", 1)
-	check(o, "bar-1")
-
-	reset()
-	g.SetLevel(DebugLevel)
-	g.Trace("test-1")
-	g.Traceln("test-2")
-	g.Tracef("test-%d", 3)
-	g.Print("test-4")
-	g.Println("test-5")
-	g.Printf("test-%d", 6)
-	if w.Len() != 0 {
-		t.Fatal(w.Len())
+	do := func(f func()) {
+		w.Reset()
+		o = new(O)
+		f()
 	}
+
+	// -------------- TraceLevel -----------------
+	g.SetLevel(TraceLevel)
+
+	do(func() {
+		g.Trace("foo")
+		check(o, "foo", TraceLevel)
+	})
+
+	do(func() {
+		g.Traceln("bar")
+		check(o, "bar", TraceLevel)
+	})
+
+	do(func() {
+		g.Tracef("bar-%d", 1)
+		check(o, "bar-1", TraceLevel)
+	})
+
+	do(func() {
+		g.Print("foo")
+		check(o, "foo", TraceLevel)
+	})
+
+	do(func() {
+		g.Println("bar")
+		check(o, "bar", TraceLevel)
+	})
+
+	do(func() {
+		g.Printf("bar-%d", 1)
+		check(o, "bar-1", TraceLevel)
+	})
+
+	// -------------- DebugLevel -----------------
+	g.SetLevel(DebugLevel)
+
+	do(func() {
+		g.Trace("test-1")
+		g.Traceln("test-2")
+		g.Tracef("test-%d", 3)
+		g.Print("test-4")
+		g.Println("test-5")
+		g.Printf("test-%d", 6)
+
+		if w.Len() != 0 {
+			t.Fatal(w.Len())
+		}
+	})
+
 }
