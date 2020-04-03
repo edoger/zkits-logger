@@ -127,6 +127,7 @@ func TestLogger_Log(t *testing.T) {
 			t.Fatal(o.Fields)
 		}
 	}
+
 	do := func(f func()) {
 		w.Reset()
 		o = new(O)
@@ -182,4 +183,216 @@ func TestLogger_Log(t *testing.T) {
 		}
 	})
 
+	do(func() {
+		g.Debug("foo")
+		check(o, "foo", DebugLevel)
+	})
+
+	do(func() {
+		g.Debugln("bar")
+		check(o, "bar", DebugLevel)
+	})
+
+	do(func() {
+		g.Debugf("bar-%d", 1)
+		check(o, "bar-1", DebugLevel)
+	})
+
+	// -------------- InfoLevel -----------------
+	g.SetLevel(InfoLevel)
+
+	do(func() {
+		g.Debug("test-1")
+		g.Debugln("test-2")
+		g.Debugf("test-%d", 3)
+
+		if w.Len() != 0 {
+			t.Fatal(w.Len())
+		}
+	})
+
+	do(func() {
+		g.Info("foo")
+		check(o, "foo", InfoLevel)
+	})
+
+	do(func() {
+		g.Infoln("bar")
+		check(o, "bar", InfoLevel)
+	})
+
+	do(func() {
+		g.Infof("bar-%d", 1)
+		check(o, "bar-1", InfoLevel)
+	})
+
+	// -------------- WarnLevel -----------------
+	g.SetLevel(WarnLevel)
+
+	do(func() {
+		g.Info("test-1")
+		g.Infoln("test-2")
+		g.Infof("test-%d", 3)
+
+		if w.Len() != 0 {
+			t.Fatal(w.Len())
+		}
+	})
+
+	do(func() {
+		g.Warn("foo")
+		check(o, "foo", WarnLevel)
+	})
+
+	do(func() {
+		g.Warnln("bar")
+		check(o, "bar", WarnLevel)
+	})
+
+	do(func() {
+		g.Warnf("bar-%d", 1)
+		check(o, "bar-1", WarnLevel)
+	})
+
+	do(func() {
+		g.Warning("foo")
+		check(o, "foo", WarnLevel)
+	})
+
+	do(func() {
+		g.Warningln("bar")
+		check(o, "bar", WarnLevel)
+	})
+
+	do(func() {
+		g.Warningf("bar-%d", 1)
+		check(o, "bar-1", WarnLevel)
+	})
+
+	// -------------- ErrorLevel -----------------
+	g.SetLevel(ErrorLevel)
+
+	do(func() {
+		g.Warn("test-1")
+		g.Warnln("test-2")
+		g.Warnf("test-%d", 3)
+		g.Warning("test-4")
+		g.Warningln("test-5")
+		g.Warningf("test-%d", 6)
+
+		if w.Len() != 0 {
+			t.Fatal(w.Len())
+		}
+	})
+
+	do(func() {
+		g.Error("foo")
+		check(o, "foo", ErrorLevel)
+	})
+
+	do(func() {
+		g.Errorln("bar")
+		check(o, "bar", ErrorLevel)
+	})
+
+	do(func() {
+		g.Errorf("bar-%d", 1)
+		check(o, "bar-1", ErrorLevel)
+	})
+
+	// -------------- FatalLevel -----------------
+	g.SetLevel(FatalLevel)
+
+	var exitCode int
+
+	g.WithExitFunc(func(i int) { exitCode = i })
+
+	checkExit := func(code int) {
+		if exitCode != code {
+			t.Fatalf("No exit: %d", exitCode)
+		}
+	}
+
+	do(func() {
+		g.Error("test-1")
+		g.Errorln("test-2")
+		g.Errorf("test-%d", 3)
+
+		if w.Len() != 0 {
+			t.Fatal(w.Len())
+		}
+	})
+
+	do(func() {
+		exitCode = 0
+		g.Fatal("foo")
+		check(o, "foo", FatalLevel)
+		checkExit(1)
+	})
+
+	do(func() {
+		exitCode = 0
+		g.Fatalln("bar")
+		check(o, "bar", FatalLevel)
+		checkExit(1)
+	})
+
+	do(func() {
+		exitCode = 0
+		g.Fatalf("bar-%d", 1)
+		check(o, "bar-1", FatalLevel)
+		checkExit(1)
+	})
+
+	// -------------- PanicLevel -----------------
+	g.SetLevel(PanicLevel)
+
+	var panicValue interface{}
+
+	checkPanic := func() {
+		if panicValue == nil {
+			t.Fatal("No panic")
+		}
+		if _, ok := panicValue.(Summary); !ok {
+			t.Fatalf("Panic value %T", panicValue)
+		}
+	}
+
+	call := func(f func()) {
+		defer func() { panicValue = recover() }()
+		f()
+	}
+
+	do(func() {
+		exitCode = 0
+		g.Fatal("test-1")
+		g.Fatalln("test-2")
+		g.Fatalf("test-%d", 3)
+
+		if w.Len() != 0 {
+			t.Fatal(w.Len())
+		}
+		checkExit(0)
+	})
+
+	do(func() {
+		panicValue = nil
+		call(func() { g.Panic("foo") })
+		check(o, "foo", PanicLevel)
+		checkPanic()
+	})
+
+	do(func() {
+		panicValue = nil
+		call(func() { g.Panicln("bar") })
+		check(o, "bar", PanicLevel)
+		checkPanic()
+	})
+
+	do(func() {
+		panicValue = nil
+		call(func() { g.Panicf("bar-%d", 1) })
+		check(o, "bar-1", PanicLevel)
+		checkPanic()
+	})
 }
