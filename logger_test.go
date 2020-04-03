@@ -16,6 +16,7 @@ package logger
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -517,6 +518,20 @@ func TestLogger_With(t *testing.T) {
 			"err": "error",
 		})
 	})
+
+	do(func() {
+		l := g.WithContext(context.Background())
+		if l == nil {
+			t.Fatal("Logger.WithFields() return nil")
+		}
+	})
+
+	do(func() {
+		l := g.WithField("key", 1).WithContext(context.Background())
+		if l == nil {
+			t.Fatal("Log.WithFields() return nil")
+		}
+	})
 }
 
 func TestLogger_Hook(t *testing.T) {
@@ -565,6 +580,9 @@ func TestLogger_Hook(t *testing.T) {
 				t.Fatal(want, got)
 			}
 		}
+		if s.Context() == nil {
+			t.Fatal("Nil context")
+		}
 	}
 
 	do := func(f func()) {
@@ -575,6 +593,14 @@ func TestLogger_Hook(t *testing.T) {
 
 	do(func() {
 		g.WithField("key", 1).Trace("test")
+		if su == nil {
+			t.Fatal("Hook no exec")
+		}
+		check(w.Bytes(), su, TraceLevel, map[string]interface{}{"key": 1})
+	})
+
+	do(func() {
+		g.WithContext(context.Background()).WithField("key", 1).Trace("test")
 		if su == nil {
 			t.Fatal("Hook no exec")
 		}
