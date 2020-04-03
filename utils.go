@@ -16,11 +16,15 @@ package logger
 
 import (
 	"fmt"
+	"io"
 	"os"
 )
+
+// Test easily.
+var _w io.Writer = os.Stderr
 
 // Writes the internal error information of the logger to standard error.
 // For internal errors, we always leave some traces for easy tracking.
 func echo(format string, args ...interface{}) {
-	_, _ = fmt.Fprintln(os.Stderr, fmt.Sprintf(format, args...))
+	_, _ = fmt.Fprintln(_w, fmt.Sprintf(format, args...))
 }
