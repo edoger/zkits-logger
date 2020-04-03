@@ -597,3 +597,59 @@ func TestLogger_Hook(t *testing.T) {
 		}
 	})
 }
+
+func ExampleLogger_Hook_Error() {
+	_w = os.Stdout
+	defer func() { _w = os.Stderr }()
+
+	w := new(bytes.Buffer)
+	g := New("test")
+	g.SetOutput(w)
+	g.SetLevel(TraceLevel)
+	g.WithHook([]Level{TraceLevel}, func(s Summary) error {
+		return errors.New("error")
+	})
+	g.Trace("test")
+
+	// Output:
+	// Failed to fire hook: error
+}
+
+type errJSON struct{}
+
+func (errJSON) MarshalJSON() ([]byte, error) {
+	return nil, errors.New("error")
+}
+
+func ExampleLogger_JSONEncode_Error() {
+	_w = os.Stdout
+	defer func() { _w = os.Stderr }()
+
+	w := new(bytes.Buffer)
+	g := New("test")
+	g.SetOutput(w)
+	g.SetLevel(TraceLevel)
+	g.WithField("key", errJSON{}).Trace("test")
+
+	// Output:
+	// Failed to serialize log: json: error calling MarshalJSON for type logger.errJSON: error
+}
+
+type errWriter struct{}
+
+func (errWriter) Write([]byte) (int, error) {
+	return 0, errors.New("error")
+}
+
+func ExampleLogger_Write_Error() {
+	_w = os.Stdout
+	defer func() { _w = os.Stderr }()
+
+	g := New("test")
+	g.SetOutput(new(errWriter))
+	g.SetLevel(TraceLevel)
+	g.Trace("test")
+
+	// Output:
+	// Failed to write log: error
+}
