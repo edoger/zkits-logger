@@ -21,26 +21,40 @@ import (
 
 const (
 	// PanicLevel indicates a very serious event at the highest level.
-	// When the log is written, panic will be triggered automatically.
 	PanicLevel Level = iota + 1
+
 	// FatalLevel indicates that an event occurred that the application
-	// cannot continue to run. When the log is written, the exit function
-	// will be called automatically.
+	// cannot continue to run.
 	FatalLevel
+
 	// ErrorLevel indicates that an event occurred within the application
 	// but does not affect continued operation.
 	ErrorLevel
+
 	// WarnLevel indicates that a noteworthy event has occurred inside
 	// the application.
 	WarnLevel
+
 	// InfoLevel represents some general information events.
 	InfoLevel
+
 	// DebugLevel represents some informational events for debugging, and
 	// very verbose logging.
 	DebugLevel
+
 	// TraceLevel represents the finest granular information event.
 	TraceLevel
 )
+
+var allLevels = map[Level]string{
+	PanicLevel: "panic",
+	FatalLevel: "fatal",
+	ErrorLevel: "error",
+	WarnLevel:  "warn",
+	InfoLevel:  "info",
+	DebugLevel: "debug",
+	TraceLevel: "trace",
+}
 
 // All supported log levels.
 var iLevels = map[Level]string{
@@ -67,7 +81,11 @@ func (level Level) String() string {
 
 // Determines whether the current log level is a valid value.
 func (level Level) IsValid() bool {
-	return level >= 1 && level <= 7
+	return level >= PanicLevel && level <= TraceLevel
+}
+
+func (level Level) IsEnabled(l Level) bool {
+	return l <= level && l > 0
 }
 
 // Parses the log level from the given string.
@@ -87,10 +105,9 @@ func ParseLevel(s string) (Level, error) {
 		return DebugLevel, nil
 	case "trace":
 		return TraceLevel, nil
-	default:
-		// A level zero value is not a supported level.
-		return 0, fmt.Errorf(`invalid log level string "%s"`, s)
 	}
+	// A level zero value is not a supported level.
+	return 0, fmt.Errorf(`invalid log level string "%s"`, s)
 }
 
 // Parses the log level from the given string.
