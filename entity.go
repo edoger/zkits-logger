@@ -41,9 +41,8 @@ type Entity interface {
 	Context() context.Context
 }
 
-// Summary interface defines the summary of the log.
-// The log summary is the final state of a log, and the content of the log
-// will no longer change.
+// Summary interface defines the summary of the log. The log summary is the final state of a log,
+// and the content of the log will no longer change.
 type Summary interface {
 	Entity
 	io.Reader
@@ -70,7 +69,6 @@ type logEntity struct {
 	ctx     context.Context
 	buffer  bytes.Buffer
 }
-
 
 // Name returns the logger name.
 func (o *logEntity) Name() string {
