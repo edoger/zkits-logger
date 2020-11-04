@@ -1,0 +1,44 @@
+// Copyright 2020 The ZKits Project Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package internal
+
+// Fields type defines the dynamic field collection of the log.
+// After Fields are created, their stored keys will not change.
+type Fields map[string]interface{}
+
+// Clone returns a cloned Fields.
+// If n is given, the returned fields will be pre-expanded with equal capacity.
+func (fs Fields) Clone(n int) Fields {
+	if len(fs) == 0 {
+		return make(Fields, n)
+	}
+	r := make(Fields, len(fs)+n)
+	for k, v := range fs {
+		r[k] = v
+	}
+	return r
+}
+
+// With returns a cloned Fields and adds the given data to it.
+func (fs Fields) With(src map[string]interface{}) Fields {
+	if len(src) == 0 {
+		return fs.Clone(0)
+	}
+	r := fs.Clone(len(src))
+	for k, v := range src {
+		r[k] = v
+	}
+	return r
+}
