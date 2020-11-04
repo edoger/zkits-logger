@@ -15,6 +15,8 @@
 package internal
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"time"
 )
@@ -28,4 +30,12 @@ var (
 
 	// DefaultNowFunc is the default now function for all logger instances.
 	DefaultNowFunc = time.Now
+
+	// ErrorWriter is used to output logger internal error messages.
+	ErrorWriter io.Writer = os.Stderr
 )
+
+// EchoError writes the given logger internal error message to ErrorWriter.
+func EchoError(format string, args ...interface{}) {
+	_, _ = fmt.Fprintln(ErrorWriter, fmt.Sprintf(format, args...))
+}
