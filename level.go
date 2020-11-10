@@ -46,49 +46,36 @@ const (
 	TraceLevel
 )
 
-var allLevels = map[Level]string{
-	PanicLevel: "panic",
-	FatalLevel: "fatal",
-	ErrorLevel: "error",
-	WarnLevel:  "warn",
-	InfoLevel:  "info",
-	DebugLevel: "debug",
-	TraceLevel: "trace",
-}
-
-// All supported log levels.
-var iLevels = map[Level]string{
-	PanicLevel: "panic",
-	FatalLevel: "fatal",
-	ErrorLevel: "error",
-	WarnLevel:  "warn",
-	InfoLevel:  "info",
-	DebugLevel: "debug",
-	TraceLevel: "trace",
-}
-
-// The log level type.
+// Level is the level of the log.
 type Level uint32
 
-// Gets the string form of the current log level.
+// All supported log levels.
+var allLevels = map[Level]string{
+	PanicLevel: "panic", FatalLevel: "fatal",
+	ErrorLevel: "error", WarnLevel: "warn", InfoLevel: "info",
+	DebugLevel: "debug", TraceLevel: "trace",
+}
+
+// String returns the string form of the current level.
 // If the log level is not supported, always returns "unknown".
 func (level Level) String() string {
-	if s, found := iLevels[level]; found {
+	if s, found := allLevels[level]; found {
 		return s
 	}
 	return "unknown"
 }
 
-// Determines whether the current log level is a valid value.
+// IsValid determines whether the current level is valid.
 func (level Level) IsValid() bool {
-	return level >= PanicLevel && level <= TraceLevel
+	return level <= TraceLevel && level >= PanicLevel
 }
 
+// IsEnabled returns whether the given level is included in the current level.
 func (level Level) IsEnabled(l Level) bool {
 	return l <= level && l > 0
 }
 
-// Parses the log level from the given string.
+// ParseLevel parses the log level from the given string.
 func ParseLevel(s string) (Level, error) {
 	switch strings.ToLower(strings.TrimSpace(s)) {
 	case "panic":
@@ -110,7 +97,7 @@ func ParseLevel(s string) (Level, error) {
 	return 0, fmt.Errorf(`invalid log level string "%s"`, s)
 }
 
-// Parses the log level from the given string.
+// MustParseLevel parses the log level from the given string.
 // If the given string is invalid, it will panic.
 func MustParseLevel(s string) Level {
 	level, err := ParseLevel(s)
