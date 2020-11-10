@@ -60,6 +60,9 @@ func TestLogger_Output(t *testing.T) {
 	if o.SetOutput(w) == nil {
 		t.Fatal("Logger.SetOutput(): nil")
 	}
+	if o.SetOutput(nil) == nil {
+		t.Fatal("Logger.SetOutput(nil): nil")
+	}
 }
 
 func TestLogger_SetNowFunc(t *testing.T) {
@@ -128,18 +131,25 @@ func TestLogger_Log(t *testing.T) {
 			w.Reset()
 			buf.Reset()
 			level, message := f(o)
-			err := json.NewEncoder(buf).Encode(map[string]interface{}{
-				"name":    "test",
-				"time":    now.Format(time.RFC3339),
-				"level":   level.String(),
-				"message": message,
-				"fields":  map[string]interface{}{},
-			})
-			if err != nil {
-				t.Fatalf("%s: %s", s, err)
-			}
-			if !bytes.Equal(w.Bytes(), buf.Bytes()) {
-				t.Fatalf("%s: %s -- %s", s, w.String(), buf.String())
+			if level.IsValid() {
+				err := json.NewEncoder(buf).Encode(map[string]interface{}{
+					"name":    "test",
+					"time":    now.Format(time.RFC3339),
+					"level":   level.String(),
+					"message": message,
+					"fields":  map[string]interface{}{},
+				})
+				if err != nil {
+					t.Fatalf("%s: %s", s, err)
+				}
+				if !bytes.Equal(w.Bytes(), buf.Bytes()) {
+					t.Fatalf("%s: %s -- %s", s, w.String(), buf.String())
+				}
+			} else {
+				// No log
+				if got := w.String(); got != "" {
+					t.Fatalf("%s: %s", s, got)
+				}
 			}
 		}
 	}
@@ -260,6 +270,32 @@ func TestLogger_Log(t *testing.T) {
 	}, func(o Logger) (Level, string) {
 		o.Panicf("foo-%s", "bar")
 		return PanicLevel, fmt.Sprintf("foo-%s", "bar")
+	})
+
+	// Test a higher level of log.
+	o.SetLevel(ErrorLevel)
+
+	do("Use ErrorLevel", func(o Logger) (Level, string) {
+		o.Trace("foo")
+		return 0, "" // No log
+	}, func(o Logger) (Level, string) {
+		o.Debug("foo")
+		return 0, "" // No log
+	}, func(o Logger) (Level, string) {
+		o.Info("foo")
+		return 0, "" // No log
+	}, func(o Logger) (Level, string) {
+		o.Warn("foo")
+		return 0, "" // No log
+	}, func(o Logger) (Level, string) {
+		o.Error("foo")
+		return ErrorLevel, "foo"
+	}, func(o Logger) (Level, string) {
+		o.Fatal("foo")
+		return FatalLevel, "foo"
+	}, func(o Logger) (Level, string) {
+		o.Panic("foo")
+		return PanicLevel, "foo"
 	})
 }
 
