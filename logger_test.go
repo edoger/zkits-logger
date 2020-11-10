@@ -20,8 +20,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"testing"
 	"time"
+
+	"github.com/edoger/zkits-logger/internal"
 )
 
 func TestNew(t *testing.T) {
@@ -300,6 +303,21 @@ func TestLogger_Log(t *testing.T) {
 	})
 }
 
+func TestLogger_LogPanic(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+
+	defer func() {
+		if recover() == nil {
+			t.Fatal("No panic")
+		}
+	}()
+
+	o.Panic("foo")
+}
+
 func TestLogger_Hook(t *testing.T) {
 	w := new(bytes.Buffer)
 	o := New("test")
@@ -350,14 +368,199 @@ func TestLogger_WithContext(t *testing.T) {
 	}
 }
 
-type testErrorJSONMarshaler string
+func TestLogger_WithFields(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
 
-func (s testErrorJSONMarshaler) MarshalJSON() ([]byte, error) {
-	return nil, errors.New(string(s))
+	var fields map[string]interface{}
+
+	o.AddHookFunc([]Level{TraceLevel}, func(s Summary) error {
+		fields = s.Fields()
+		return nil
+	})
+
+	o.Trace("foo") // Without fields
+	if fields != nil {
+		t.Fatalf("Fields: %v", fields)
+	}
+	if got := fields["key"]; got != nil {
+		t.Fatalf("Fields: %v", got)
+	}
+
+	o.WithFields(map[string]interface{}{"key": "foo"}).Trace("foo")
+	if fields == nil {
+		t.Fatal("Fields: nil")
+	}
+	if got := fields["key"].(string); got != "foo" {
+		t.Fatalf("Fields: %s", got)
+	}
+}
+
+func TestLogger_WithField(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+
+	var fields map[string]interface{}
+
+	o.AddHookFunc([]Level{TraceLevel}, func(s Summary) error {
+		fields = s.Fields()
+		return nil
+	})
+
+	o.Trace("foo") // Without field
+	if fields != nil {
+		t.Fatalf("Fields: %v", fields)
+	}
+	if got := fields["key"]; got != nil {
+		t.Fatalf("Fields: %v", got)
+	}
+
+	o.WithField("key", "foo").Trace("foo")
+	if fields == nil {
+		t.Fatal("Fields: nil")
+	}
+	if got := fields["key"].(string); got != "foo" {
+		t.Fatalf("Fields: %s", got)
+	}
+}
+
+func TestLogger_WithError(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+
+	var fields map[string]interface{}
+
+	o.AddHookFunc([]Level{TraceLevel}, func(s Summary) error {
+		fields = s.Fields()
+		return nil
+	})
+
+	o.Trace("foo") // Without error
+	if fields != nil {
+		t.Fatalf("Fields: %v", fields)
+	}
+	if got := fields["error"]; got != nil {
+		t.Fatalf("Fields: %v", got)
+	}
+
+	o.WithError(errors.New("error")).Trace("foo")
+	if fields == nil {
+		t.Fatal("Fields: nil")
+	}
+	if got := fields["error"].(error); got.Error() != "error" {
+		t.Fatalf("Fields: %s", got)
+	}
+}
+
+func TestLogger_Formatter(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+
+	o.SetFormatter(FormatterFunc(func(e Entity, b *bytes.Buffer) error {
+		b.WriteString("formatter")
+		return nil
+	}))
+
+	o.Trace("foo")
+	if got := w.String(); got != "formatter" {
+		t.Fatalf("Formatter: %s", got)
+	}
+}
+
+func TestLoggerFormatterError(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+
+	buf := new(bytes.Buffer)
+
+	internal.ErrorWriter = buf
+	defer func() { internal.ErrorWriter = os.Stderr }()
+
+	o.SetFormatter(FormatterFunc(func(Entity, *bytes.Buffer) error {
+		return errors.New("formatter")
+	}))
+
+	o.Trace("foo")
+
+	if got := buf.String(); got != "Failed to format log: formatter\n" {
+		t.Fatalf("Formatter: %s", got)
+	}
+}
+
+func TestLoggerHookError(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+
+	buf := new(bytes.Buffer)
+
+	internal.ErrorWriter = buf
+	defer func() { internal.ErrorWriter = os.Stderr }()
+
+	o.AddHookFunc([]Level{TraceLevel}, func(Summary) error {
+		return errors.New("hook")
+	})
+
+	o.Trace("foo")
+
+	if got := buf.String(); got != "Failed to fire hook: hook\n" {
+		t.Fatalf("Hook: %s", got)
+	}
 }
 
 type testErrorWriter string
 
 func (s testErrorWriter) Write([]byte) (int, error) {
 	return 0, errors.New(string(s))
+}
+
+func TestLoggerWriterError(t *testing.T) {
+	w := testErrorWriter("writer")
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+
+	buf := new(bytes.Buffer)
+
+	internal.ErrorWriter = buf
+	defer func() { internal.ErrorWriter = os.Stderr }()
+
+	o.Trace("foo")
+
+	if got := buf.String(); got != "Failed to write log: writer\n" {
+		t.Fatalf("Writer: %s", got)
+	}
+}
+
+func TestLoggerHookUseHookBag(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+
+	var ok bool
+
+	bag := NewHookBag()
+	bag.Add(NewHookFromFunc([]Level{TraceLevel}, func(Summary) error {
+		ok = true
+		return nil
+	}))
+
+	o.AddHook(bag)
+	o.Trace("foo")
+
+	if !ok {
+		t.Fatalf("UseHookBag: %v", ok)
+	}
 }
