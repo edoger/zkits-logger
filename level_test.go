@@ -150,3 +150,11 @@ func TestMustParseLevelPanic(t *testing.T) {
 
 	MustParseLevel("unknown")
 }
+
+func TestGetAllLevels(t *testing.T) {
+	got := GetAllLevels()
+
+	if len(got) != 7 {
+		t.Fatalf("GetAllLevels(): %v", got)
+	}
+}
