@@ -106,3 +106,8 @@ func MustParseLevel(s string) Level {
 	}
 	return level
 }
+
+// GetAllLevels returns all supported log levels.
+func GetAllLevels() []Level {
+	return []Level{PanicLevel, FatalLevel, ErrorLevel, WarnLevel, InfoLevel, DebugLevel, TraceLevel}
+}
