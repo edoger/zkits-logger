@@ -17,93 +17,99 @@ package logger
 import (
 	"io"
 	"os"
+	"time"
+
+	"github.com/edoger/zkits-logger/internal"
 )
 
-// Definition of the logger.
 type Logger interface {
 	Log
 
-	// Get the current logger level.
+	// GetLevel returns the current logger level.
 	GetLevel() Level
-	// Set the current logger level.
+
+	// SetLevel sets the current logger level.
 	SetLevel(Level) Logger
-	// Get the current logger output writer.
-	GetOutput() io.Writer
-	// Set the current logger output writer.
+
+	// SetOutput sets the current logger output writer.
 	SetOutput(io.Writer) Logger
-	// Set the current logger system exit function.
-	WithExitFunc(func(int)) Logger
-	// Register hook to the current logger.
-	WithHook([]Level, Hook) Logger
+
+	SetNowFunc(func() time.Time) Logger
+	SetExitFunc(func(int)) Logger
+	SetPanicFunc(func(string)) Logger
+	SetFormatter(Formatter) Logger
+	AddHook(Hook) Logger
+	AddHookFunc([]Level, func(Summary) error) Logger
 }
 
-// Create a new logger.
-// By default, the logger level is InfoLevel and logs will be output to
-// standard output.
+// New creates a new Logger instance.
+// By default, the logger level is TraceLevel and logs will be output to os.Stdout.
 func New(name string) Logger {
-	return &logger{
-		log: log{
-			common: newCommon(name),
-			fields: make(map[string]interface{}),
-		},
-	}
+	return &logger{log{core: newCore(name)}}
 }
 
-// Internal implementation of the Logger interface.
 type logger struct {
 	log
 }
 
-// Get the current logger level.
+// GetLevel returns the current logger level.
 func (o *logger) GetLevel() Level {
-	return o.log.common.level
+	return o.core.level
 }
 
-// Set the current logger level.
+// SetLevel sets the current logger level.
 func (o *logger) SetLevel(level Level) Logger {
-	o.log.common.mutex.Lock()
-	defer o.log.common.mutex.Unlock()
-	// Invalid level will be ignored.
-	if level.IsValid() {
-		o.log.common.level = level
-	}
+	o.core.level = level
 	return o
 }
 
-// Get the current logger output writer.
-func (o *logger) GetOutput() io.Writer {
-	return o.log.common.writer
-}
-
-// Set the current logger output writer.
+// SetOutput sets the current logger output writer.
 func (o *logger) SetOutput(w io.Writer) Logger {
-	o.log.common.mutex.Lock()
-	defer o.log.common.mutex.Unlock()
-
-	o.log.common.writer = w
-	return o
-}
-
-// Set the current logger system exit function.
-func (o *logger) WithExitFunc(exit func(int)) Logger {
-	o.log.common.mutex.Lock()
-	defer o.log.common.mutex.Unlock()
-
-	if exit == nil {
-		o.log.common.exit = os.Exit
+	if w == nil {
+		o.core.writer = os.Stdout
 	} else {
-		o.log.common.exit = exit
+		o.core.writer = w
 	}
 	return o
 }
 
-// Register hook to the current logger.
-func (o *logger) WithHook(levels []Level, hook Hook) Logger {
-	o.log.common.mutex.Lock()
-	defer o.log.common.mutex.Unlock()
-
-	for _, level := range levels {
-		o.log.common.hooks.add(level, hook)
+func (o *logger) SetNowFunc(f func() time.Time) Logger {
+	if f == nil {
+		o.core.nowFunc = internal.DefaultNowFunc
+	} else {
+		o.core.nowFunc = f
 	}
 	return o
+}
+
+func (o *logger) SetExitFunc(f func(int)) Logger {
+	if f == nil {
+		o.core.exitFunc = internal.EmptyExitFunc
+	} else {
+		o.core.exitFunc = f
+	}
+	return o
+}
+
+func (o *logger) SetPanicFunc(f func(string)) Logger {
+	if f == nil {
+		o.core.panicFunc = internal.EmptyPanicFunc
+	} else {
+		o.core.panicFunc = f
+	}
+	return o
+}
+
+func (o *logger) SetFormatter(formatter Formatter) Logger {
+	o.core.formatter = formatter
+	return o
+}
+
+func (o *logger) AddHook(hook Hook) Logger {
+	o.core.hooks.Add(hook)
+	return o
+}
+
+func (o *logger) AddHookFunc(levels []Level, hook func(Summary) error) Logger {
+	return o.AddHook(NewHookFromFunc(levels, hook))
 }

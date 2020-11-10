@@ -25,8 +25,14 @@ var (
 	// DefaultExitFunc is the default exit function for all logger instances.
 	DefaultExitFunc = os.Exit
 
+	// EmptyExitFunc is the empty exit function for all logger instances.
+	EmptyExitFunc = func(int) {}
+
 	// DefaultPanicFunc is the default panic function for all logger instances.
 	DefaultPanicFunc = func(s string) { panic(s) }
+
+	// EmptyPanicFunc is the empty panic function for all logger instances.
+	EmptyPanicFunc = func(string) {}
 
 	// DefaultNowFunc is the default now function for all logger instances.
 	DefaultNowFunc = time.Now
