@@ -18,12 +18,23 @@ import (
 	"bytes"
 )
 
+// Formatter interface defines a standard log formatter.
+// The log formatter is not necessary for built-in loggers. We serialize logs to
+// JSON format by default. This interface only provides a simple way to change
+// this default behavior.
 type Formatter interface {
+	// Format formats the given log entity into character data and writes it to
+	// the given buffer. If the error returned is not empty, the log will be discarded
+	// and the registered log hook will not be triggered. We will output the error
+	// information to os.Stderr.
 	Format(Entity, *bytes.Buffer) error
 }
 
+// FormatterFunc type defines a log formatter in the form of a function.
 type FormatterFunc func(Entity, *bytes.Buffer) error
 
+// Format formats the given log entity into character data and writes it to
+// the given buffer.
 func (f FormatterFunc) Format(e Entity, b *bytes.Buffer) error {
 	return f(e, b)
 }

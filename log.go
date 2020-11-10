@@ -172,6 +172,8 @@ type Log interface {
 	Panicf(string, ...interface{})
 }
 
+// The core type defines the collection of shared attributes within the log,
+// and each independent Logger shares the same core instance.
 type core struct {
 	name      string
 	level     Level
@@ -198,6 +200,7 @@ func newCore(name string) *core {
 	}
 }
 
+// Get a log entity from the pool and initialize it.
 func (c *core) getEntity(l *log, level Level, message string) *logEntity {
 	o := c.pool.Get().(*logEntity)
 
@@ -211,8 +214,11 @@ func (c *core) getEntity(l *log, level Level, message string) *logEntity {
 	return o
 }
 
+// Clean up and recycle the given log entity.
 func (c *core) putEntity(o *logEntity) {
 	if o.buffer.Cap() > 1024 {
+		// If the log size exceeds 1KB, we need to discard this buffer to
+		// free memory faster.
 		o.buffer = bytes.Buffer{}
 	} else {
 		o.buffer.Reset()

@@ -22,6 +22,7 @@ import (
 	"github.com/edoger/zkits-logger/internal"
 )
 
+// Logger interface defines a standard logger.
 type Logger interface {
 	Log
 
@@ -32,13 +33,33 @@ type Logger interface {
 	SetLevel(Level) Logger
 
 	// SetOutput sets the current logger output writer.
+	// If the given writer is nil, os.Stdout is used.
 	SetOutput(io.Writer) Logger
 
+	// SetNowFunc sets the function that gets the current time.
+	// If the given function is nil, time.Now is used.
 	SetNowFunc(func() time.Time) Logger
+
+	// SetExitFunc sets the exit function of the current logger.
+	// If the given function is nil, the exit function is disabled.
+	// The exit function is called automatically after the FatalLevel level log is recorded.
+	// By default, the exit function we use is os.Exit.
 	SetExitFunc(func(int)) Logger
+
+	// SetPanicFunc sets the panic function of the current logger.
+	// If the given function is nil, the panic function is disabled.
+	// The panic function is called automatically after the PanicLevel level log is recorded.
+	// By default, the panic function we use is func(s string) { panic(s) }.
 	SetPanicFunc(func(string)) Logger
+
+	// SetFormatter sets the log formatter for the current logger.
+	// If the given log formatter is nil, we will record the log in JSON format.
 	SetFormatter(Formatter) Logger
+
+	// AddHook adds the given log hook to the current logger.
 	AddHook(Hook) Logger
+
+	// AddHookFunc adds the given log hook function to the current logger.
 	AddHookFunc([]Level, func(Summary) error) Logger
 }
 
@@ -48,6 +69,7 @@ func New(name string) Logger {
 	return &logger{log{core: newCore(name)}}
 }
 
+// The logger type is an implementation of the built-in logger interface.
 type logger struct {
 	log
 }
@@ -64,6 +86,7 @@ func (o *logger) SetLevel(level Level) Logger {
 }
 
 // SetOutput sets the current logger output writer.
+// If the given writer is nil, os.Stdout is used.
 func (o *logger) SetOutput(w io.Writer) Logger {
 	if w == nil {
 		o.core.writer = os.Stdout
@@ -73,6 +96,8 @@ func (o *logger) SetOutput(w io.Writer) Logger {
 	return o
 }
 
+// SetNowFunc sets the function that gets the current time.
+// If the given function is nil, time.Now is used.
 func (o *logger) SetNowFunc(f func() time.Time) Logger {
 	if f == nil {
 		o.core.nowFunc = internal.DefaultNowFunc
@@ -82,6 +107,10 @@ func (o *logger) SetNowFunc(f func() time.Time) Logger {
 	return o
 }
 
+// SetExitFunc sets the exit function of the current logger.
+// If the given function is nil, the exit function is disabled.
+// The exit function is called automatically after the FatalLevel level log is recorded.
+// By default, the exit function we use is os.Exit.
 func (o *logger) SetExitFunc(f func(int)) Logger {
 	if f == nil {
 		o.core.exitFunc = internal.EmptyExitFunc
@@ -91,6 +120,10 @@ func (o *logger) SetExitFunc(f func(int)) Logger {
 	return o
 }
 
+// SetPanicFunc sets the panic function of the current logger.
+// If the given function is nil, the panic function is disabled.
+// The panic function is called automatically after the PanicLevel level log is recorded.
+// By default, the panic function we use is func(s string) { panic(s) }.
 func (o *logger) SetPanicFunc(f func(string)) Logger {
 	if f == nil {
 		o.core.panicFunc = internal.EmptyPanicFunc
@@ -100,16 +133,20 @@ func (o *logger) SetPanicFunc(f func(string)) Logger {
 	return o
 }
 
+// SetFormatter sets the log formatter for the current logger.
+// If the given log formatter is nil, we will record the log in JSON format.
 func (o *logger) SetFormatter(formatter Formatter) Logger {
 	o.core.formatter = formatter
 	return o
 }
 
+// AddHook adds the given log hook to the current logger.
 func (o *logger) AddHook(hook Hook) Logger {
 	o.core.hooks.Add(hook)
 	return o
 }
 
+// AddHookFunc adds the given log hook function to the current logger.
 func (o *logger) AddHookFunc(levels []Level, hook func(Summary) error) Logger {
 	return o.AddHook(NewHookFromFunc(levels, hook))
 }
