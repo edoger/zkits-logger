@@ -16,6 +16,7 @@ package logger
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -299,10 +300,6 @@ func TestLogger_Log(t *testing.T) {
 	})
 }
 
-func TestLogger_With(t *testing.T) {
-
-}
-
 func TestLogger_Hook(t *testing.T) {
 	w := new(bytes.Buffer)
 	o := New("test")
@@ -320,6 +317,36 @@ func TestLogger_Hook(t *testing.T) {
 
 	if message != "foo" {
 		t.Fatalf("Log hook not exec: %s", message)
+	}
+}
+
+func TestLogger_WithContext(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+
+	var ctx context.Context
+
+	o.AddHookFunc([]Level{TraceLevel}, func(s Summary) error {
+		ctx = s.Context()
+		return nil
+	})
+
+	o.Trace("foo") // Without context
+	if ctx == nil {
+		t.Fatal("Context: nil")
+	}
+	if got := ctx.Value("key"); got != nil {
+		t.Fatalf("Context: %v", got)
+	}
+
+	o.WithContext(context.WithValue(context.Background(), "key", "foo")).Trace("foo")
+	if ctx == nil {
+		t.Fatal("Context: nil")
+	}
+	if got := ctx.Value("key").(string); got != "foo" {
+		t.Fatalf("Context: %s", got)
 	}
 }
 
