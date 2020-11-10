@@ -21,3 +21,9 @@ import (
 type Formatter interface {
 	Format(Entity, *bytes.Buffer) error
 }
+
+type FormatterFunc func(Entity, *bytes.Buffer) error
+
+func (f FormatterFunc) Format(e Entity, b *bytes.Buffer) error {
+	return f(e, b)
+}
