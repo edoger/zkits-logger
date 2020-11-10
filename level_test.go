@@ -19,64 +19,134 @@ import (
 )
 
 func TestLevel_String(t *testing.T) {
-	for level, s := range iLevels {
-		if got := level.String(); got != s {
-			t.Fatalf("%s != %s", s, got)
-		}
+	items := []struct {
+		Given Level
+		Want  string
+	}{
+		{PanicLevel, "panic"},
+		{FatalLevel, "fatal"},
+		{ErrorLevel, "error"},
+		{WarnLevel, "warn"},
+		{InfoLevel, "info"},
+		{DebugLevel, "debug"},
+		{TraceLevel, "trace"},
+		{Level(0), "unknown"},
 	}
 
-	if got := Level(0).String(); got != "unknown" {
-		t.Fatalf("unknown != %s", got)
+	for _, item := range items {
+		if got := item.Given.String(); got != item.Want {
+			t.Fatalf("Level.String(): want %v, got %v", item.Want, got)
+		}
 	}
 }
 
 func TestLevel_IsValid(t *testing.T) {
-	for level := range iLevels {
-		if !level.IsValid() {
-			t.Fatalf("Level(%d).IsValid() return false", level)
-		}
+	items := []struct {
+		Given Level
+		Want  bool
+	}{
+		{PanicLevel, true},
+		{FatalLevel, true},
+		{ErrorLevel, true},
+		{WarnLevel, true},
+		{InfoLevel, true},
+		{DebugLevel, true},
+		{TraceLevel, true},
+		{Level(0), false},
 	}
 
-	if Level(0).IsValid() {
-		t.Fatal("Level(0).IsValid() return true")
+	for _, item := range items {
+		if got := item.Given.IsValid(); got != item.Want {
+			t.Fatalf("Level.IsValid(): want %v, got %v", item.Want, got)
+		}
+	}
+}
+
+func TestLevel_IsEnabled(t *testing.T) {
+	level := InfoLevel
+	items := []struct {
+		Given Level
+		Want  bool
+	}{
+		{PanicLevel, true},
+		{FatalLevel, true},
+		{ErrorLevel, true},
+		{WarnLevel, true},
+		{InfoLevel, true},
+		{DebugLevel, false},
+		{TraceLevel, false},
+		{Level(0), false},
+	}
+
+	for _, item := range items {
+		if got := level.IsEnabled(item.Given); got != item.Want {
+			t.Fatalf("Level.IsEnabled(): want %v, got %v", item.Want, got)
+		}
 	}
 }
 
 func TestParseLevel(t *testing.T) {
-	for level, s := range iLevels {
-		got, err := ParseLevel(s)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got != level {
-			t.Fatalf("%d != %d", got, level)
-		}
+	items := []struct {
+		Given string
+		Want  Level
+		Erred bool
+	}{
+		{"panic", PanicLevel, false},
+		{"fatal", FatalLevel, false},
+		{"error", ErrorLevel, false},
+		{"warn", WarnLevel, false},
+		{"warning", WarnLevel, false},
+		{"info", InfoLevel, false},
+		{"debug", DebugLevel, false},
+		{"trace", TraceLevel, false},
+		{"unknown", Level(0), true},
 	}
 
-	if got, err := ParseLevel("unknown"); err == nil {
-		t.Fatal(`ParseLevel("unknown") return nil error`)
-	} else {
-		if got != 0 {
-			t.Fatalf(`ParseLevel("unknown") return %d`, got)
+	for _, item := range items {
+		got, err := ParseLevel(item.Given)
+		if got != item.Want {
+			t.Fatalf("ParseLevel(): want %v, got %v", item.Want, got)
+		}
+		if item.Erred {
+			if err == nil {
+				t.Fatal("ParseLevel(): no error")
+			}
+		} else {
+			if err != nil {
+				t.Fatalf("ParseLevel(): %s", err)
+			}
 		}
 	}
 }
 
 func TestMustParseLevel(t *testing.T) {
-	for level, s := range iLevels {
-		if got := MustParseLevel(s); got != level {
-			t.Fatalf("%d != %d", got, level)
+	items := []struct {
+		Given string
+		Want  Level
+	}{
+		{"panic", PanicLevel},
+		{"fatal", FatalLevel},
+		{"error", ErrorLevel},
+		{"warn", WarnLevel},
+		{"warning", WarnLevel},
+		{"info", InfoLevel},
+		{"debug", DebugLevel},
+		{"trace", TraceLevel},
+	}
+
+	for _, item := range items {
+		if got := MustParseLevel(item.Given); got != item.Want {
+			t.Fatalf("MustParseLevel(): want %v, got %v", item.Want, got)
 		}
 	}
+}
 
-	call := func(f func()) (v interface{}) {
-		defer func() { v = recover() }()
-		f()
-		return
-	}
+func TestMustParseLevelPanic(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("MustParseLevel() not panic")
+		}
+	}()
 
-	v := call(func() { MustParseLevel("unknown") })
-	if v == nil {
-		t.Fatal(`MustParseLevel("unknown") not panic`)
-	}
+	MustParseLevel("unknown")
 }
