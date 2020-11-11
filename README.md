@@ -30,16 +30,13 @@ At the same time, it supports 7 levels of logs and provides complete hook functi
     
     func main() {
         // Creates a logger instance with the specified name.
-        // By default, logs are output to standard output.
-        // In addition, logger only record INFO or higher level logs.
-        // You can modify these settings by calling methods.
-        // log.SetOutput()
-        // log.SetLevel()
         log := logger.New("test")
     
-        // Record an info level log.
-        // {"level":"info","logger":"test","message":"It's log!","time":"2006-01-02 15:04:05","fields":{}}
-        log.Info("It's log!")
+        // {"fields":{},"level":"info","message":"Something happened.","name":"app","time":"2020-02-20T20:20:20+08:00"}
+        log.Info("Something happened.")
+    
+        // {"fields":{"num":1},"level":"info","message":"Something happened.","name":"app","time":"2020-02-20T20:20:20+08:00"}
+        log.WithField("num", 1).Info("Something happened.")
     }
     ```
 
