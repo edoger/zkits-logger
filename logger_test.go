@@ -117,6 +117,16 @@ func TestLogger_SetFormatter(t *testing.T) {
 	}
 }
 
+func TestLogger_SetDefaultTimeFormat(t *testing.T) {
+	o := New("test")
+	if o.SetDefaultTimeFormat("2006-01-02 15:04:05") == nil {
+		t.Fatal("Logger.SetDefaultTimeFormat(): nil")
+	}
+	if o.SetDefaultTimeFormat("") == nil {
+		t.Fatal("Logger.SetDefaultTimeFormat(): nil")
+	}
+}
+
 func TestLogger_Log(t *testing.T) {
 	w := new(bytes.Buffer)
 	o := New("test")
