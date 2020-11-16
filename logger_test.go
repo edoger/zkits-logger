@@ -122,6 +122,9 @@ func TestLogger_SetDefaultTimeFormat(t *testing.T) {
 	if o.SetDefaultTimeFormat("2006-01-02 15:04:05") == nil {
 		t.Fatal("Logger.SetDefaultTimeFormat(): nil")
 	}
+	if o.SetDefaultTimeFormat("") == nil {
+		t.Fatal("Logger.SetDefaultTimeFormat(): nil")
+	}
 }
 
 func TestLogger_Log(t *testing.T) {
