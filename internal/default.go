@@ -37,6 +37,9 @@ var (
 	// DefaultNowFunc is the default now function for all logger instances.
 	DefaultNowFunc = time.Now
 
+	// DefaultTimeFormat is the default time format for all logger instances.
+	DefaultTimeFormat = time.RFC3339
+
 	// ErrorWriter is used to output logger internal error messages.
 	ErrorWriter io.Writer = os.Stderr
 )

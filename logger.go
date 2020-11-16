@@ -56,6 +56,10 @@ type Logger interface {
 	// If the given log formatter is nil, we will record the log in JSON format.
 	SetFormatter(Formatter) Logger
 
+	// SetDefaultTimeFormat sets the default log time format for the current logger.
+	// If the given time format is empty string, internal.DefaultTimeFormat is used.
+	SetDefaultTimeFormat(string) Logger
+
 	// AddHook adds the given log hook to the current logger.
 	AddHook(Hook) Logger
 
@@ -137,6 +141,17 @@ func (o *logger) SetPanicFunc(f func(string)) Logger {
 // If the given log formatter is nil, we will record the log in JSON format.
 func (o *logger) SetFormatter(formatter Formatter) Logger {
 	o.core.formatter = formatter
+	return o
+}
+
+// SetDefaultTimeFormat sets the default log time format for the current logger.
+// If the given time format is empty string, internal.DefaultTimeFormat is used.
+func (o *logger) SetDefaultTimeFormat(format string) Logger {
+	if format == "" {
+		o.core.timeFormat = internal.DefaultTimeFormat
+	} else {
+		o.core.timeFormat = format
+	}
 	return o
 }
 

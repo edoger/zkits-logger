@@ -175,28 +175,30 @@ type Log interface {
 // The core type defines the collection of shared attributes within the log,
 // and each independent Logger shares the same core instance.
 type core struct {
-	name      string
-	level     Level
-	formatter Formatter
-	writer    io.Writer
-	pool      sync.Pool
-	hooks     HookBag
-	nowFunc   func() time.Time
-	exitFunc  func(int)
-	panicFunc func(string)
+	name       string
+	level      Level
+	formatter  Formatter
+	writer     io.Writer
+	pool       sync.Pool
+	hooks      HookBag
+	timeFormat string
+	nowFunc    func() time.Time
+	exitFunc   func(int)
+	panicFunc  func(string)
 }
 
 // Create a new core instance and bind the logger name.
 func newCore(name string) *core {
 	return &core{
-		name:      name,
-		level:     TraceLevel,
-		writer:    os.Stdout,
-		pool:      sync.Pool{New: func() interface{} { return new(logEntity) }},
-		hooks:     NewHookBag(),
-		nowFunc:   internal.DefaultNowFunc,
-		exitFunc:  internal.DefaultExitFunc,
-		panicFunc: internal.DefaultPanicFunc,
+		name:       name,
+		level:      TraceLevel,
+		writer:     os.Stdout,
+		pool:       sync.Pool{New: func() interface{} { return new(logEntity) }},
+		hooks:      NewHookBag(),
+		timeFormat: internal.DefaultTimeFormat,
+		nowFunc:    internal.DefaultNowFunc,
+		exitFunc:   internal.DefaultExitFunc,
+		panicFunc:  internal.DefaultPanicFunc,
 	}
 }
 
@@ -287,7 +289,7 @@ func (o *log) log(level Level, message string) {
 		}
 		err = json.NewEncoder(&entity.buffer).Encode(map[string]interface{}{
 			"name":    entity.name,
-			"time":    entity.time.Format(time.RFC3339),
+			"time":    entity.time.Format(o.core.timeFormat),
 			"level":   level.String(),
 			"message": message,
 			"fields":  fields,
