@@ -1,0 +1,10 @@
+# Disable MSBuild, Use script.
+build: off
+version: "{build}"
+
+before_test:
+  - go env
+  - go version
+
+test_script:
+  - go test -v -coverprofile=coverage.out -covermode=count ./...
