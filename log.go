@@ -315,7 +315,7 @@ func (o *log) log(level Level, message string) {
 	if level < ErrorLevel {
 		switch level {
 		case FatalLevel:
-			o.core.exitFunc(0)
+			o.core.exitFunc(1)
 		case PanicLevel:
 			o.core.panicFunc(message)
 		}
