@@ -57,7 +57,7 @@ func TestLogger_Level(t *testing.T) {
 	}
 }
 
-func TestLogger_Output(t *testing.T) {
+func TestLogger_SetOutput(t *testing.T) {
 	o := New("test")
 	w := new(bytes.Buffer)
 
@@ -66,6 +66,18 @@ func TestLogger_Output(t *testing.T) {
 	}
 	if o.SetOutput(nil) == nil {
 		t.Fatal("Logger.SetOutput(nil): nil")
+	}
+}
+
+func TestLogger_SetLevelOutput(t *testing.T) {
+	o := New("test")
+	w := new(bytes.Buffer)
+
+	if o.SetLevelOutput(InfoLevel, w) == nil {
+		t.Fatal("Logger.SetLevelOutput(): nil")
+	}
+	if o.SetLevelOutput(InfoLevel, nil) == nil {
+		t.Fatal("Logger.SetLevelOutput(io.Writer, nil): nil")
 	}
 }
 
@@ -572,5 +584,20 @@ func TestLoggerHookUseHookBag(t *testing.T) {
 
 	if !ok {
 		t.Fatalf("UseHookBag: %v", ok)
+	}
+}
+
+func TestLogger_LevelOutput(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+
+	w2 := new(bytes.Buffer)
+	o.SetLevelOutput(TraceLevel, w2)
+
+	o.Trace("foo")
+	if w2.Len() == 0 {
+		t.Fatal("LevelOutput: empty output")
 	}
 }
