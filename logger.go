@@ -36,6 +36,11 @@ type Logger interface {
 	// If the given writer is nil, os.Stdout is used.
 	SetOutput(io.Writer) Logger
 
+	// SetLevelOutput sets the current logger level output writer.
+	// The level output writer is used to write log data of a given level.
+	// If the given writer is nil, the level writer will be disabled.
+	SetLevelOutput(level Level, w io.Writer) Logger
+
 	// SetNowFunc sets the function that gets the current time.
 	// If the given function is nil, time.Now is used.
 	SetNowFunc(func() time.Time) Logger
@@ -97,6 +102,14 @@ func (o *logger) SetOutput(w io.Writer) Logger {
 	} else {
 		o.core.writer = w
 	}
+	return o
+}
+
+// SetLevelOutput sets the current logger level output writer.
+// The level output writer is used to write log data of a given level.
+// If the given writer is nil, the level writer will be disabled.
+func (o *logger) SetLevelOutput(level Level, w io.Writer) Logger {
+	o.core.levelWriter[level] = w
 	return o
 }
 

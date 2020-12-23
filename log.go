@@ -175,30 +175,32 @@ type Log interface {
 // The core type defines the collection of shared attributes within the log,
 // and each independent Logger shares the same core instance.
 type core struct {
-	name       string
-	level      Level
-	formatter  Formatter
-	writer     io.Writer
-	pool       sync.Pool
-	hooks      HookBag
-	timeFormat string
-	nowFunc    func() time.Time
-	exitFunc   func(int)
-	panicFunc  func(string)
+	name        string
+	level       Level
+	formatter   Formatter
+	writer      io.Writer
+	levelWriter map[Level]io.Writer
+	pool        sync.Pool
+	hooks       HookBag
+	timeFormat  string
+	nowFunc     func() time.Time
+	exitFunc    func(int)
+	panicFunc   func(string)
 }
 
 // Create a new core instance and bind the logger name.
 func newCore(name string) *core {
 	return &core{
-		name:       name,
-		level:      TraceLevel,
-		writer:     os.Stdout,
-		pool:       sync.Pool{New: func() interface{} { return new(logEntity) }},
-		hooks:      NewHookBag(),
-		timeFormat: internal.DefaultTimeFormat,
-		nowFunc:    internal.DefaultNowFunc,
-		exitFunc:   internal.DefaultExitFunc,
-		panicFunc:  internal.DefaultPanicFunc,
+		name:        name,
+		level:       TraceLevel,
+		writer:      os.Stdout,
+		levelWriter: make(map[Level]io.Writer),
+		pool:        sync.Pool{New: func() interface{} { return new(logEntity) }},
+		hooks:       NewHookBag(),
+		timeFormat:  internal.DefaultTimeFormat,
+		nowFunc:     internal.DefaultNowFunc,
+		exitFunc:    internal.DefaultExitFunc,
+		panicFunc:   internal.DefaultPanicFunc,
 	}
 }
 
@@ -306,7 +308,12 @@ func (o *log) log(level Level, message string) {
 		if err != nil {
 			internal.EchoError("Failed to fire hook: %s", err)
 		}
-		_, err = o.core.writer.Write(entity.Bytes())
+
+		if writer, found := o.core.levelWriter[level]; found && writer != nil {
+			_, err = writer.Write(entity.Bytes())
+		} else {
+			_, err = o.core.writer.Write(entity.Bytes())
+		}
 		if err != nil {
 			internal.EchoError("Failed to write log: %s", err)
 		}
