@@ -40,6 +40,72 @@ func TestLevel_String(t *testing.T) {
 	}
 }
 
+func TestLevel_CapitalString(t *testing.T) {
+	items := []struct {
+		Given Level
+		Want  string
+	}{
+		{PanicLevel, "PANIC"},
+		{FatalLevel, "FATAL"},
+		{ErrorLevel, "ERROR"},
+		{WarnLevel, "WARN"},
+		{InfoLevel, "INFO"},
+		{DebugLevel, "DEBUG"},
+		{TraceLevel, "TRACE"},
+		{Level(0), "UNKNOWN"},
+	}
+
+	for _, item := range items {
+		if got := item.Given.CapitalString(); got != item.Want {
+			t.Fatalf("Level.CapitalString(): want %v, got %v", item.Want, got)
+		}
+	}
+}
+
+func TestLevel_ShortString(t *testing.T) {
+	items := []struct {
+		Given Level
+		Want  string
+	}{
+		{PanicLevel, "pnc"},
+		{FatalLevel, "fat"},
+		{ErrorLevel, "err"},
+		{WarnLevel, "wan"},
+		{InfoLevel, "inf"},
+		{DebugLevel, "dbg"},
+		{TraceLevel, "tac"},
+		{Level(0), "uno"},
+	}
+
+	for _, item := range items {
+		if got := item.Given.ShortString(); got != item.Want {
+			t.Fatalf("Level.ShortString(): want %v, got %v", item.Want, got)
+		}
+	}
+}
+
+func TestLevel_ShortCapitalString(t *testing.T) {
+	items := []struct {
+		Given Level
+		Want  string
+	}{
+		{PanicLevel, "PNC"},
+		{FatalLevel, "FAT"},
+		{ErrorLevel, "ERR"},
+		{WarnLevel, "WAN"},
+		{InfoLevel, "INF"},
+		{DebugLevel, "DBG"},
+		{TraceLevel, "TAC"},
+		{Level(0), "UNO"},
+	}
+
+	for _, item := range items {
+		if got := item.Given.ShortCapitalString(); got != item.Want {
+			t.Fatalf("Level.ShortCapitalString(): want %v, got %v", item.Want, got)
+		}
+	}
+}
+
 func TestLevel_IsValid(t *testing.T) {
 	items := []struct {
 		Given Level
@@ -92,14 +158,23 @@ func TestParseLevel(t *testing.T) {
 		Erred bool
 	}{
 		{"panic", PanicLevel, false},
+		{"pnc", PanicLevel, false},
 		{"fatal", FatalLevel, false},
+		{"fat", FatalLevel, false},
 		{"error", ErrorLevel, false},
+		{"err", ErrorLevel, false},
 		{"warn", WarnLevel, false},
+		{"wan", WarnLevel, false},
 		{"warning", WarnLevel, false},
 		{"info", InfoLevel, false},
+		{"inf", InfoLevel, false},
+		{"echo", InfoLevel, false},
 		{"debug", DebugLevel, false},
+		{"dbg", DebugLevel, false},
 		{"trace", TraceLevel, false},
-		{"unknown", Level(0), true},
+		{"tac", TraceLevel, false},
+		{"print", TraceLevel, false},
+		{"unknown", 0, true},
 	}
 
 	for _, item := range items {

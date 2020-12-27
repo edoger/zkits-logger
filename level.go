@@ -50,19 +50,50 @@ const (
 type Level uint32
 
 // All supported log levels.
-var allLevels = map[Level]string{
-	PanicLevel: "panic", FatalLevel: "fatal",
-	ErrorLevel: "error", WarnLevel: "warn", InfoLevel: "info",
-	DebugLevel: "debug", TraceLevel: "trace",
+var allLevels = map[Level][]string{
+	PanicLevel: {"panic", "PANIC", "pnc", "PNC"},
+	FatalLevel: {"fatal", "FATAL", "fat", "FAT"},
+	ErrorLevel: {"error", "ERROR", "err", "ERR"},
+	WarnLevel:  {"warn", "WARN", "wan", "WAN"},
+	InfoLevel:  {"info", "INFO", "inf", "INF"},
+	DebugLevel: {"debug", "DEBUG", "dbg", "DBG"},
+	TraceLevel: {"trace", "TRACE", "tac", "TAC"},
 }
 
 // String returns the string form of the current level.
 // If the log level is not supported, always returns "unknown".
 func (level Level) String() string {
 	if s, found := allLevels[level]; found {
-		return s
+		return s[0]
 	}
 	return "unknown"
+}
+
+// CapitalString returns the capital string form of the current level.
+// If the log level is not supported, always returns "UNKNOWN".
+func (level Level) CapitalString() string {
+	if s, found := allLevels[level]; found {
+		return s[1]
+	}
+	return "UNKNOWN"
+}
+
+// ShortString returns the short string form of the current level.
+// If the log level is not supported, always returns "uno".
+func (level Level) ShortString() string {
+	if s, found := allLevels[level]; found {
+		return s[2]
+	}
+	return "uno"
+}
+
+// ShortCapitalString returns the short capital string form of the current level.
+// If the log level is not supported, always returns "UNO".
+func (level Level) ShortCapitalString() string {
+	if s, found := allLevels[level]; found {
+		return s[3]
+	}
+	return "UNO"
 }
 
 // IsValid determines whether the current level is valid.
@@ -78,19 +109,19 @@ func (level Level) IsEnabled(l Level) bool {
 // ParseLevel parses the log level from the given string.
 func ParseLevel(s string) (Level, error) {
 	switch strings.ToLower(strings.TrimSpace(s)) {
-	case "panic":
+	case "panic", "pnc":
 		return PanicLevel, nil
-	case "fatal":
+	case "fatal", "fat":
 		return FatalLevel, nil
-	case "error":
+	case "error", "err":
 		return ErrorLevel, nil
-	case "warn", "warning":
+	case "warn", "wan", "warning":
 		return WarnLevel, nil
-	case "info":
+	case "info", "inf", "echo":
 		return InfoLevel, nil
-	case "debug":
+	case "debug", "dbg":
 		return DebugLevel, nil
-	case "trace":
+	case "trace", "tac", "print":
 		return TraceLevel, nil
 	}
 	// A level zero value is not a supported level.
