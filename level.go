@@ -94,7 +94,7 @@ func ParseLevel(s string) (Level, error) {
 		return TraceLevel, nil
 	}
 	// A level zero value is not a supported level.
-	return 0, fmt.Errorf(`invalid log level string "%s"`, s)
+	return 0, fmt.Errorf("invalid log level string %q", s)
 }
 
 // MustParseLevel parses the log level from the given string.
