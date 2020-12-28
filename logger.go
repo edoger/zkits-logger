@@ -65,7 +65,10 @@ type Logger interface {
 	// If the given time format is empty string, internal.DefaultTimeFormat is used.
 	SetDefaultTimeFormat(string) Logger
 
+	// EnableCaller enables caller reporting on all levels of logs.
 	EnableCaller(...int) Logger
+
+	// EnableCaller enables caller reporting on logs of a given level.
 	EnableLevelCaller(Level, ...int) Logger
 
 	// AddHook adds the given log hook to the current logger.
@@ -171,21 +174,23 @@ func (o *logger) SetDefaultTimeFormat(format string) Logger {
 	return o
 }
 
+// EnableCaller enables caller reporting on all levels of logs.
 func (o *logger) EnableCaller(skip ...int) Logger {
 	var n int
 	if len(skip) > 0 && skip[0] > 0 {
 		n = skip[0]
 	}
-	o.core.caller = internal.NewCaller(n)
+	o.core.caller = internal.NewCallerReporter(n)
 	return o
 }
 
+// EnableCaller enables caller reporting on logs of a given level.
 func (o *logger) EnableLevelCaller(level Level, skip ...int) Logger {
 	var n int
 	if len(skip) > 0 && skip[0] > 0 {
 		n = skip[0]
 	}
-	o.core.levelCaller[level] = internal.NewCaller(n)
+	o.core.levelCaller[level] = internal.NewCallerReporter(n)
 	return o
 }
 

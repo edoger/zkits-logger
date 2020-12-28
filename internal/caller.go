@@ -20,17 +20,19 @@ import (
 	"strconv"
 )
 
+// KnownCallerDepth is the internally known call stack depth.
 const KnownCallerDepth = 5
 
-func NewCaller(skip int) *Caller {
-	return &Caller{skip: skip}
+// NewCallerReporter returns a CallerReporter instance.
+func NewCallerReporter(skip int) *CallerReporter {
+	return &CallerReporter{skip: skip}
 }
 
-type Caller struct {
+type CallerReporter struct {
 	skip int
 }
 
-func (o *Caller) String() string {
+func (o *CallerReporter) String() string {
 	if _, file, line, ok := runtime.Caller(o.skip + KnownCallerDepth); ok {
 		return filepath.Base(file) + ":" + strconv.Itoa(line)
 	}

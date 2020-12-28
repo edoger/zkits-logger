@@ -192,8 +192,8 @@ type core struct {
 	nowFunc     func() time.Time
 	exitFunc    func(int)
 	panicFunc   func(string)
-	caller      *internal.Caller
-	levelCaller map[Level]*internal.Caller
+	caller      *internal.CallerReporter
+	levelCaller map[Level]*internal.CallerReporter
 }
 
 // Create a new core instance and bind the logger name.
@@ -209,7 +209,7 @@ func newCore(name string) *core {
 		nowFunc:     internal.DefaultNowFunc,
 		exitFunc:    internal.DefaultExitFunc,
 		panicFunc:   internal.DefaultPanicFunc,
-		levelCaller: make(map[Level]*internal.Caller),
+		levelCaller: make(map[Level]*internal.CallerReporter),
 	}
 }
 
@@ -363,16 +363,20 @@ func (o *log) record(level Level, message string) {
 	}
 }
 
+// Get the caller report.
+// If caller reporting is not enabled in the current log, an empty string is always returned.
 func (o *log) getCaller(level Level) string {
 	if o.caller != 2 {
-		if b, found := o.core.levelCaller[level]; found && b != nil {
+		if b, found := o.core.levelCaller[level]; found {
 			return b.String()
 		}
 		if o.core.caller != nil {
 			return o.core.caller.String()
 		}
+		// If caller reporting is forcibly enabled on the current log, we must
+		// ensure that a valid caller is obtained.
 		if o.caller == 1 {
-			return internal.DefaultCaller.String()
+			return internal.DefaultCallerReporter.String()
 		}
 	}
 	return ""

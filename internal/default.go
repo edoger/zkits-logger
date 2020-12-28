@@ -40,8 +40,8 @@ var (
 	// DefaultTimeFormat is the default time format for all logger instances.
 	DefaultTimeFormat = time.RFC3339
 
-	// DefaultCaller is the default caller for all logger instances.
-	DefaultCaller = NewCaller(0)
+	// DefaultCallerReporter is the default caller for all logger instances.
+	DefaultCallerReporter = NewCallerReporter(0)
 
 	// ErrorWriter is used to output logger internal error messages.
 	ErrorWriter io.Writer = os.Stderr
