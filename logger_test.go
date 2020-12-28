@@ -163,7 +163,6 @@ func TestLogger_Log(t *testing.T) {
 					"time":    now.Format(time.RFC3339),
 					"level":   level.String(),
 					"message": message,
-					"fields":  map[string]interface{}{},
 				})
 				if err != nil {
 					t.Fatalf("%s: %s", s, err)
