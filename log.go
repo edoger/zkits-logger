@@ -241,7 +241,6 @@ type log struct {
 	core   *core
 	ctx    context.Context
 	fields internal.Fields
-	root   bool
 }
 
 // Name returns the logger name.
@@ -279,8 +278,14 @@ func (o *log) log(level Level, message string) {
 
 	var err error
 	if formatter := o.core.formatter; formatter == nil {
-		fields := make(map[string]interface{}, len(o.fields))
+		kv := map[string]interface{}{
+			"name":    entity.name,
+			"time":    entity.time.Format(o.core.timeFormat),
+			"level":   level.String(),
+			"message": message,
+		}
 		if len(o.fields) > 0 {
+			fields := make(map[string]interface{}, len(o.fields))
 			for k, v := range o.fields {
 				if err, ok := v.(error); ok {
 					fields[k] = err.Error()
@@ -288,14 +293,9 @@ func (o *log) log(level Level, message string) {
 					fields[k] = v
 				}
 			}
+			kv["fields"] = fields
 		}
-		err = json.NewEncoder(&entity.buffer).Encode(map[string]interface{}{
-			"name":    entity.name,
-			"time":    entity.time.Format(o.core.timeFormat),
-			"level":   level.String(),
-			"message": message,
-			"fields":  fields,
-		})
+		err = json.NewEncoder(&entity.buffer).Encode(kv)
 	} else {
 		err = formatter.Format(entity, &entity.buffer)
 	}
