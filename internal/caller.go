@@ -28,11 +28,12 @@ func NewCallerReporter(skip int) *CallerReporter {
 	return &CallerReporter{skip: skip}
 }
 
+// CallerReporter defines the log caller reporter.
 type CallerReporter struct {
 	skip int
 }
 
-func (o *CallerReporter) String() string {
+func (o *CallerReporter) GetCaller() string {
 	if _, file, line, ok := runtime.Caller(o.skip + KnownCallerDepth); ok {
 		return filepath.Base(file) + ":" + strconv.Itoa(line)
 	}

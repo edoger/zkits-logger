@@ -368,15 +368,15 @@ func (o *log) record(level Level, message string) {
 func (o *log) getCaller(level Level) string {
 	if o.caller != 2 {
 		if b, found := o.core.levelCaller[level]; found {
-			return b.String()
+			return b.GetCaller()
 		}
 		if o.core.caller != nil {
-			return o.core.caller.String()
+			return o.core.caller.GetCaller()
 		}
 		// If caller reporting is forcibly enabled on the current log, we must
 		// ensure that a valid caller is obtained.
 		if o.caller == 1 {
-			return internal.DefaultCallerReporter.String()
+			return internal.DefaultCallerReporter.GetCaller()
 		}
 	}
 	return ""
