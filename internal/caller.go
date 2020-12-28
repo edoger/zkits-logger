@@ -33,6 +33,8 @@ type CallerReporter struct {
 	skip int
 }
 
+// GetCaller reports file and line number information about function invocations on
+// the calling goroutine's stack.
 func (o *CallerReporter) GetCaller() string {
 	if _, file, line, ok := runtime.Caller(o.skip + KnownCallerDepth); ok {
 		return filepath.Base(file) + ":" + strconv.Itoa(line)
