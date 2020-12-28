@@ -339,6 +339,21 @@ func TestLogger_LogPanic(t *testing.T) {
 	o.Panic("foo")
 }
 
+func TestLoggerWithLevel(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(ErrorLevel)
+
+	o.Log(InfoLevel, "foo")
+	o.Logf(InfoLevel, "%d", 1)
+	o.Logln(InfoLevel, "bar")
+
+	if got := w.String(); got != "" {
+		t.Fatalf("Logger: %s", got)
+	}
+}
+
 func TestLogger_Hook(t *testing.T) {
 	w := new(bytes.Buffer)
 	o := New("test")
