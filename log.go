@@ -272,7 +272,7 @@ func (o *log) WithContext(ctx context.Context) Log {
 }
 
 // Format and record the current log.
-func (o *log) log(level Level, message string) {
+func (o *log) record(level Level, message string) {
 	entity := o.core.getEntity(o, level, message)
 	defer o.core.putEntity(entity)
 
@@ -336,9 +336,15 @@ func (o *log) log(level Level, message string) {
 // called automatically after logging is completed.
 // If the given log level is invalid, the log will be discarded.
 func (o *log) Log(level Level, args ...interface{}) {
-	if o.core.level.IsEnabled(level) {
-		o.log(level, fmt.Sprint(args...))
+	o.log(level, fmt.Sprint(args...))
+}
+
+// Uses the given parameters to record a log of the specified level.
+func (o *log) log(level Level, args ...interface{}) {
+	if !o.core.level.IsEnabled(level) {
+		return
 	}
+	o.record(level, fmt.Sprint(args...))
 }
 
 // Logln uses the given parameters to record a log of the specified level.
@@ -348,10 +354,16 @@ func (o *log) Log(level Level, args ...interface{}) {
 // called automatically after logging is completed.
 // If the given log level is invalid, the log will be discarded.
 func (o *log) Logln(level Level, args ...interface{}) {
-	if o.core.level.IsEnabled(level) {
-		s := fmt.Sprintln(args...)
-		o.log(level, s[:len(s)-1])
+	o.logln(level, args...)
+}
+
+// Uses the given parameters to record a log of the specified level.
+func (o *log) logln(level Level, args ...interface{}) {
+	if !o.core.level.IsEnabled(level) {
+		return
 	}
+	s := fmt.Sprintln(args...)
+	o.record(level, s[:len(s)-1])
 }
 
 // Logf uses the given parameters to record a log of the specified level.
@@ -361,169 +373,175 @@ func (o *log) Logln(level Level, args ...interface{}) {
 // called automatically after logging is completed.
 // If the given log level is invalid, the log will be discarded.
 func (o *log) Logf(level Level, format string, args ...interface{}) {
-	if o.core.level.IsEnabled(level) {
-		o.log(level, fmt.Sprintf(format, args...))
+	o.logf(level, format, args...)
+}
+
+// Uses the given parameters to record a log of the specified level.
+func (o *log) logf(level Level, format string, args ...interface{}) {
+	if !o.core.level.IsEnabled(level) {
+		return
 	}
+	o.record(level, fmt.Sprintf(format, args...))
 }
 
 // Trace uses the given parameters to record a TraceLevel log.
 func (o *log) Trace(args ...interface{}) {
-	o.Log(TraceLevel, args...)
+	o.log(TraceLevel, args...)
 }
 
 // Traceln uses the given parameters to record a TraceLevel log.
 func (o *log) Traceln(args ...interface{}) {
-	o.Logln(TraceLevel, args...)
+	o.logln(TraceLevel, args...)
 }
 
 // Tracef uses the given parameters to record a TraceLevel log.
 func (o *log) Tracef(format string, args ...interface{}) {
-	o.Logf(TraceLevel, format, args...)
+	o.logf(TraceLevel, format, args...)
 }
 
 // Print uses the given parameters to record a TraceLevel log.
 func (o *log) Print(args ...interface{}) {
-	o.Log(TraceLevel, args...)
+	o.log(TraceLevel, args...)
 }
 
 // Println uses the given parameters to record a TraceLevel log.
 func (o *log) Println(args ...interface{}) {
-	o.Logln(TraceLevel, args...)
+	o.logln(TraceLevel, args...)
 }
 
 // Printf uses the given parameters to record a TraceLevel log.
 func (o *log) Printf(format string, args ...interface{}) {
-	o.Logf(TraceLevel, format, args...)
+	o.logf(TraceLevel, format, args...)
 }
 
 // Debug uses the given parameters to record a DebugLevel log.
 func (o *log) Debug(args ...interface{}) {
-	o.Log(DebugLevel, args...)
+	o.log(DebugLevel, args...)
 }
 
 // Debugln uses the given parameters to record a DebugLevel log.
 func (o *log) Debugln(args ...interface{}) {
-	o.Logln(DebugLevel, args...)
+	o.logln(DebugLevel, args...)
 }
 
 // Debugf uses the given parameters to record a DebugLevel log.
 func (o *log) Debugf(format string, args ...interface{}) {
-	o.Logf(DebugLevel, format, args...)
+	o.logf(DebugLevel, format, args...)
 }
 
 // Info uses the given parameters to record a InfoLevel log.
 func (o *log) Info(args ...interface{}) {
-	o.Log(InfoLevel, args...)
+	o.log(InfoLevel, args...)
 }
 
 // Infoln uses the given parameters to record a InfoLevel log.
 func (o *log) Infoln(args ...interface{}) {
-	o.Logln(InfoLevel, args...)
+	o.logln(InfoLevel, args...)
 }
 
 // Infof uses the given parameters to record a InfoLevel log.
 func (o *log) Infof(format string, args ...interface{}) {
-	o.Logf(InfoLevel, format, args...)
+	o.logf(InfoLevel, format, args...)
 }
 
 // Echo uses the given parameters to record a InfoLevel log.
 func (o *log) Echo(args ...interface{}) {
-	o.Log(InfoLevel, args...)
+	o.log(InfoLevel, args...)
 }
 
 // Echoln uses the given parameters to record a InfoLevel log.
 func (o *log) Echoln(args ...interface{}) {
-	o.Logln(InfoLevel, args...)
+	o.logln(InfoLevel, args...)
 }
 
 // Echof uses the given parameters to record a InfoLevel log.
 func (o *log) Echof(format string, args ...interface{}) {
-	o.Logf(InfoLevel, format, args...)
+	o.logf(InfoLevel, format, args...)
 }
 
 // Warn uses the given parameters to record a WarnLevel log.
 func (o *log) Warn(args ...interface{}) {
-	o.Log(WarnLevel, args...)
+	o.log(WarnLevel, args...)
 }
 
 // Warnln uses the given parameters to record a WarnLevel log.
 func (o *log) Warnln(args ...interface{}) {
-	o.Logln(WarnLevel, args...)
+	o.logln(WarnLevel, args...)
 }
 
 // Warnf uses the given parameters to record a WarnLevel log.
 func (o *log) Warnf(format string, args ...interface{}) {
-	o.Logf(WarnLevel, format, args...)
+	o.logf(WarnLevel, format, args...)
 }
 
 // Warning uses the given parameters to record a WarnLevel log.
 func (o *log) Warning(args ...interface{}) {
-	o.Log(WarnLevel, args...)
+	o.log(WarnLevel, args...)
 }
 
 // Warningln uses the given parameters to record a WarnLevel log.
 func (o *log) Warningln(args ...interface{}) {
-	o.Logln(WarnLevel, args...)
+	o.logln(WarnLevel, args...)
 }
 
 // Warningf uses the given parameters to record a WarnLevel log.
 func (o *log) Warningf(format string, args ...interface{}) {
-	o.Logf(WarnLevel, format, args...)
+	o.logf(WarnLevel, format, args...)
 }
 
 // Error uses the given parameters to record a ErrorLevel log.
 func (o *log) Error(args ...interface{}) {
-	o.Log(ErrorLevel, args...)
+	o.log(ErrorLevel, args...)
 }
 
 // Errorln uses the given parameters to record a ErrorLevel log.
 func (o *log) Errorln(args ...interface{}) {
-	o.Logln(ErrorLevel, args...)
+	o.logln(ErrorLevel, args...)
 }
 
 // Errorf uses the given parameters to record a ErrorLevel log.
 func (o *log) Errorf(format string, args ...interface{}) {
-	o.Logf(ErrorLevel, format, args...)
+	o.logf(ErrorLevel, format, args...)
 }
 
 // Fatal uses the given parameters to record a FatalLevel log.
 // After the log record is completed, the system will automatically call
 // the exit function given in advance.
 func (o *log) Fatal(args ...interface{}) {
-	o.Log(FatalLevel, args...)
+	o.log(FatalLevel, args...)
 }
 
 // Fatalln uses the given parameters to record a FatalLevel log.
 // After the log record is completed, the system will automatically call
 // the exit function given in advance.
 func (o *log) Fatalln(args ...interface{}) {
-	o.Logln(FatalLevel, args...)
+	o.logln(FatalLevel, args...)
 }
 
 // Fatalf uses the given parameters to record a FatalLevel log.
 // After the log record is completed, the system will automatically call
 // the exit function given in advance.
 func (o *log) Fatalf(format string, args ...interface{}) {
-	o.Logf(FatalLevel, format, args...)
+	o.logf(FatalLevel, format, args...)
 }
 
 // Panic uses the given parameters to record a PanicLevel log.
 // After the log record is completed, the system will automatically call
 // the panic function given in advance.
 func (o *log) Panic(args ...interface{}) {
-	o.Log(PanicLevel, args...)
+	o.log(PanicLevel, args...)
 }
 
 // Panicln uses the given parameters to record a PanicLevel log.
 // After the log record is completed, the system will automatically call
 // the panic function given in advance.
 func (o *log) Panicln(args ...interface{}) {
-	o.Logln(PanicLevel, args...)
+	o.logln(PanicLevel, args...)
 }
 
 // Panicf uses the given parameters to record a PanicLevel log.
 // After the log record is completed, the system will automatically call
 // the panic function given in advance.
 func (o *log) Panicf(format string, args ...interface{}) {
-	o.Logf(PanicLevel, format, args...)
+	o.logf(PanicLevel, format, args...)
 }
