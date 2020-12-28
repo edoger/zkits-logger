@@ -65,6 +65,9 @@ type Logger interface {
 	// If the given time format is empty string, internal.DefaultTimeFormat is used.
 	SetDefaultTimeFormat(string) Logger
 
+	EnableCaller(...int) Logger
+	EnableLevelCaller(Level, ...int) Logger
+
 	// AddHook adds the given log hook to the current logger.
 	AddHook(Hook) Logger
 
@@ -165,6 +168,24 @@ func (o *logger) SetDefaultTimeFormat(format string) Logger {
 	} else {
 		o.core.timeFormat = format
 	}
+	return o
+}
+
+func (o *logger) EnableCaller(skip ...int) Logger {
+	var n int
+	if len(skip) > 0 && skip[0] > 0 {
+		n = skip[0]
+	}
+	o.core.caller = internal.NewCaller(n)
+	return o
+}
+
+func (o *logger) EnableLevelCaller(level Level, skip ...int) Logger {
+	var n int
+	if len(skip) > 0 && skip[0] > 0 {
+		n = skip[0]
+	}
+	o.core.levelCaller[level] = internal.NewCaller(n)
 	return o
 }
 

@@ -39,6 +39,10 @@ type Entity interface {
 
 	// Context returns the log context.
 	Context() context.Context
+
+	// Caller returns the log caller.
+	// If it is not enabled, an empty string is always returned.
+	Caller() string
 }
 
 // Summary interface defines the summary of the log. The log summary is the final state of a log,
@@ -68,6 +72,7 @@ type logEntity struct {
 	fields  map[string]interface{}
 	ctx     context.Context
 	buffer  bytes.Buffer
+	caller  string
 }
 
 // Name returns the logger name.
@@ -101,6 +106,12 @@ func (o *logEntity) Context() context.Context {
 		return context.Background()
 	}
 	return o.ctx
+}
+
+// Caller returns the log caller.
+// If it is not enabled, an empty string is always returned.
+func (o *logEntity) Caller() string {
+	return o.caller
 }
 
 // Bytes returns the log content bytes.

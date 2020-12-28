@@ -45,6 +45,12 @@ type Log interface {
 	// WithContext adds the given context to the log.
 	WithContext(context.Context) Log
 
+	// WithCaller forces the caller report of the current log to be enabled.
+	WithCaller() Log
+
+	// WithoutCaller forces the caller report of the current log to be disabled.
+	WithoutCaller() Log
+
 	// Log uses the given parameters to record a log of the specified level.
 	// If the given log level is PanicLevel, the given panic function will be
 	// called automatically after logging is completed.
@@ -186,6 +192,8 @@ type core struct {
 	nowFunc     func() time.Time
 	exitFunc    func(int)
 	panicFunc   func(string)
+	caller      *internal.Caller
+	levelCaller map[Level]*internal.Caller
 }
 
 // Create a new core instance and bind the logger name.
@@ -201,11 +209,12 @@ func newCore(name string) *core {
 		nowFunc:     internal.DefaultNowFunc,
 		exitFunc:    internal.DefaultExitFunc,
 		panicFunc:   internal.DefaultPanicFunc,
+		levelCaller: make(map[Level]*internal.Caller),
 	}
 }
 
 // Get a log entity from the pool and initialize it.
-func (c *core) getEntity(l *log, level Level, message string) *logEntity {
+func (c *core) getEntity(l *log, level Level, message, caller string) *logEntity {
 	o := c.pool.Get().(*logEntity)
 
 	o.name = c.name
@@ -214,6 +223,7 @@ func (c *core) getEntity(l *log, level Level, message string) *logEntity {
 	o.message = message
 	o.fields = l.fields
 	o.ctx = l.ctx
+	o.caller = caller
 
 	return o
 }
@@ -232,6 +242,7 @@ func (c *core) putEntity(o *logEntity) {
 	o.message = ""
 	o.fields = nil
 	o.ctx = nil
+	o.caller = ""
 
 	c.pool.Put(o)
 }
@@ -241,6 +252,7 @@ type log struct {
 	core   *core
 	ctx    context.Context
 	fields internal.Fields
+	caller int // 0 - Not set; 1 - Enabled; 2 - Disabled;
 }
 
 // Name returns the logger name.
@@ -250,7 +262,7 @@ func (o *log) Name() string {
 
 // WithField adds the given extended data to the log.
 func (o *log) WithField(key string, value interface{}) Log {
-	r := &log{core: o.core, fields: o.fields.Clone(1), ctx: o.ctx}
+	r := &log{core: o.core, fields: o.fields.Clone(1), ctx: o.ctx, caller: o.caller}
 	r.fields[key] = value
 	return r
 }
@@ -263,17 +275,36 @@ func (o *log) WithError(err error) Log {
 
 // WithFields adds the given multiple extended data to the log.
 func (o *log) WithFields(fields map[string]interface{}) Log {
-	return &log{core: o.core, fields: o.fields.With(fields), ctx: o.ctx}
+	return &log{core: o.core, fields: o.fields.With(fields), ctx: o.ctx, caller: o.caller}
 }
 
 // WithContext adds the given context to the log.
 func (o *log) WithContext(ctx context.Context) Log {
-	return &log{core: o.core, fields: o.fields.Clone(0), ctx: ctx}
+	return &log{core: o.core, fields: o.fields.Clone(0), ctx: ctx, caller: o.caller}
+}
+
+// WithCaller forces the caller report of the current log to be enabled.
+func (o *log) WithCaller() Log {
+	if o.caller == 1 {
+		// If the caller is already enabled, we don't need to create a new copy.
+		return o
+	}
+	return &log{core: o.core, fields: o.fields.Clone(0), ctx: o.ctx, caller: 1}
+}
+
+// WithoutCaller forces the caller report of the current log to be disabled.
+func (o *log) WithoutCaller() Log {
+	if o.caller == 2 {
+		// If the caller is already disabled, we don't need to create a new copy.
+		return o
+	}
+	return &log{core: o.core, fields: o.fields.Clone(0), ctx: o.ctx, caller: 2}
 }
 
 // Format and record the current log.
 func (o *log) record(level Level, message string) {
-	entity := o.core.getEntity(o, level, message)
+	caller := o.getCaller(level)
+	entity := o.core.getEntity(o, level, message, caller)
 	defer o.core.putEntity(entity)
 
 	var err error
@@ -294,6 +325,9 @@ func (o *log) record(level Level, message string) {
 				}
 			}
 			kv["fields"] = fields
+		}
+		if caller != "" {
+			kv["caller"] = caller
 		}
 		err = json.NewEncoder(&entity.buffer).Encode(kv)
 	} else {
@@ -327,6 +361,21 @@ func (o *log) record(level Level, message string) {
 			o.core.panicFunc(message)
 		}
 	}
+}
+
+func (o *log) getCaller(level Level) string {
+	if o.caller != 2 {
+		if b, found := o.core.levelCaller[level]; found && b != nil {
+			return b.String()
+		}
+		if o.core.caller != nil {
+			return o.core.caller.String()
+		}
+		if o.caller == 1 {
+			return internal.DefaultCaller.String()
+		}
+	}
+	return ""
 }
 
 // Log uses the given parameters to record a log of the specified level.
