@@ -30,6 +30,7 @@ func TestLogEntityAndSummary(t *testing.T) {
 		level:   InfoLevel,
 		message: "foo",
 		fields:  map[string]interface{}{"key": "foo"},
+		caller:  "foo.go:1",
 	}
 
 	o.(*logEntity).buffer.WriteString("test")
@@ -51,6 +52,9 @@ func TestLogEntityAndSummary(t *testing.T) {
 	}
 	if got := o.Context(); got == nil {
 		t.Fatal("Summary.Context(): nil")
+	}
+	if got := o.Caller(); got != "foo.go:1" {
+		t.Fatalf("Summary.Caller(): %s", got)
 	}
 	if got := o.Bytes(); !bytes.Equal(got, []byte("test")) {
 		t.Fatalf("Summary.Bytes(): %s", string(got))
