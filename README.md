@@ -33,7 +33,7 @@ func main() {
     // Creates a logger instance with the specified name.
     log := logger.New("test")
 
-    // {"fields":{},"level":"info","message":"Something happened.","name":"test","time":"2020-02-20T20:20:20+08:00"}
+    // {"level":"info","message":"Something happened.","name":"test","time":"2020-02-20T20:20:20+08:00"}
     log.Info("Something happened.")
 
     // {"fields":{"num":1},"level":"info","message":"Something happened.","name":"test","time":"2020-02-20T20:20:20+08:00"}
