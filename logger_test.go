@@ -396,7 +396,8 @@ func TestLogger_WithContext(t *testing.T) {
 		t.Fatalf("Context: %v", got)
 	}
 
-	o.WithContext(context.WithValue(context.Background(), "key", "foo")).Trace("foo")
+	key := struct{}{}
+	o.WithContext(context.WithValue(context.Background(), key, "foo")).Trace("foo")
 	if ctx == nil {
 		t.Fatal("Context: nil")
 	}
