@@ -401,7 +401,7 @@ func TestLogger_WithContext(t *testing.T) {
 	if ctx == nil {
 		t.Fatal("Context: nil")
 	}
-	if got := ctx.Value("key").(string); got != "foo" {
+	if got := ctx.Value(key).(string); got != "foo" {
 		t.Fatalf("Context: %s", got)
 	}
 }
