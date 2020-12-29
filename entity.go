@@ -21,6 +21,7 @@ import (
 	"time"
 )
 
+// Entity interface defines the entity of the log.
 type Entity interface {
 	// Name returns the logger name.
 	Name() string
@@ -45,8 +46,8 @@ type Entity interface {
 	Caller() string
 }
 
-// Summary interface defines the summary of the log. The log summary is the final state of a log,
-// and the content of the log will no longer change.
+// Summary interface defines the summary of the log.
+// The log summary is the final state of a log, and the content of the log will no longer change.
 type Summary interface {
 	Entity
 	io.Reader
