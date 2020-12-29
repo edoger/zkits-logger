@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -613,5 +614,26 @@ func TestLogger_LevelOutput(t *testing.T) {
 	o.Trace("foo")
 	if w2.Len() == 0 {
 		t.Fatal("LevelOutput: empty output")
+	}
+}
+
+func TestLogger_BigLog(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+
+	var builder strings.Builder
+	for i := 0; i < 1500; i++ {
+		builder.WriteByte('x')
+	}
+	o.Print(builder.String()) // Big log
+	if w.Len() < 1024 {
+		t.Fatalf("Big log: %d", w.Len())
+	}
+	// For logs exceeding 1KB, the buffer will not be reused.
+	n := o.(*logger).core.pool.Get().(*logEntity).buffer.Cap()
+	if n > 1024 {
+		t.Fatalf("Big log: %d", n)
 	}
 }
