@@ -25,12 +25,20 @@ const KnownCallerDepth = 5
 
 // NewCallerReporter returns a CallerReporter instance.
 func NewCallerReporter(skip int) *CallerReporter {
+	if skip == 0 {
+		return DefaultCallerReporter
+	}
 	return &CallerReporter{skip: skip}
 }
 
 // CallerReporter defines the log caller reporter.
 type CallerReporter struct {
 	skip int
+}
+
+// Equal determines whether the given skip is equal to the current caller reporter.
+func (o *CallerReporter) Equal(skip int) bool {
+	return o.skip == skip
 }
 
 // GetCaller reports file and line number information about function invocations on

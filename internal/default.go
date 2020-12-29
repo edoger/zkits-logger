@@ -41,7 +41,7 @@ var (
 	DefaultTimeFormat = time.RFC3339
 
 	// DefaultCallerReporter is the default caller for all logger instances.
-	DefaultCallerReporter = NewCallerReporter(0)
+	DefaultCallerReporter = new(CallerReporter)
 
 	// ErrorWriter is used to output logger internal error messages.
 	ErrorWriter io.Writer = os.Stderr
