@@ -20,7 +20,7 @@ import (
 	"testing"
 )
 
-func testLoggerWrapper(o Logger) {
+func testLogCaller(o Log) {
 	o.Debug("debug")
 	o.Info("info")
 }
@@ -40,7 +40,7 @@ func TestLogger_EnableCaller(t *testing.T) {
 
 	w.Reset()
 	o.EnableCaller(1)
-	testLoggerWrapper(o) // LINE 43
+	testLogCaller(o) // LINE 43
 
 	got = w.String()
 	if !strings.Contains(got, "logger_caller_test.go:43") {
@@ -67,7 +67,7 @@ func TestLogger_EnableLevelCaller(t *testing.T) {
 
 	w.Reset()
 	o.EnableLevelCaller(DebugLevel, 1)
-	testLoggerWrapper(o) // LINE 70
+	testLogCaller(o) // LINE 70
 
 	got = w.String()
 	if !strings.Contains(got, "logger_caller_test.go:70") {
@@ -91,22 +91,24 @@ func TestLogger_WithCaller(t *testing.T) {
 	if !strings.Contains(got, "logger_caller_test.go:85") {
 		t.Fatalf("Logger caller: %s", got)
 	}
+
+	w.Reset()
+	testLogCaller(o.WithCaller(1)) // LINE 96
+	got = w.String()
+	if !strings.Contains(got, "logger_caller_test.go:96") {
+		t.Fatalf("Logger caller: %s", got)
+	}
 }
 
-func TestLogger_WithoutCaller(t *testing.T) {
+func TestLogger_InvalidCaller(t *testing.T) {
 	w := new(bytes.Buffer)
 	o := New("test")
 	o.SetOutput(w)
 	o.SetLevel(TraceLevel)
-	o.EnableCaller()
-	o.WithoutCaller().Info("test")                 // LINE 102
-	o.WithoutCaller().WithoutCaller().Info("test") // LINE 103
+	o.WithCaller(10).Info("test")
 
 	got := w.String()
-	if strings.Contains(got, "logger_caller_test.go:102") {
-		t.Fatalf("Logger caller: %s", got)
-	}
-	if strings.Contains(got, "logger_caller_test.go:103") {
+	if !strings.Contains(got, "???:0") {
 		t.Fatalf("Logger caller: %s", got)
 	}
 }

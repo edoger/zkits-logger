@@ -46,10 +46,7 @@ type Log interface {
 	WithContext(context.Context) Log
 
 	// WithCaller forces the caller report of the current log to be enabled.
-	WithCaller() Log
-
-	// WithoutCaller forces the caller report of the current log to be disabled.
-	WithoutCaller() Log
+	WithCaller(...int) Log
 
 	// Log uses the given parameters to record a log of the specified level.
 	// If the given log level is PanicLevel, the given panic function will be
@@ -252,7 +249,7 @@ type log struct {
 	core   *core
 	ctx    context.Context
 	fields internal.Fields
-	caller int // 0 - Not set; 1 - Enabled; 2 - Disabled;
+	caller *internal.CallerReporter
 }
 
 // Name returns the logger name.
@@ -284,21 +281,16 @@ func (o *log) WithContext(ctx context.Context) Log {
 }
 
 // WithCaller forces the caller report of the current log to be enabled.
-func (o *log) WithCaller() Log {
-	if o.caller == 1 {
-		// If the caller is already enabled, we don't need to create a new copy.
+func (o *log) WithCaller(skip ...int) Log {
+	var n int
+	if len(skip) > 0 && skip[0] > 0 {
+		n = skip[0]
+	}
+	// If the caller is equaled, we don't need to create a new log instance.
+	if o.caller != nil && o.caller.Equal(n) {
 		return o
 	}
-	return &log{core: o.core, fields: o.fields.Clone(0), ctx: o.ctx, caller: 1}
-}
-
-// WithoutCaller forces the caller report of the current log to be disabled.
-func (o *log) WithoutCaller() Log {
-	if o.caller == 2 {
-		// If the caller is already disabled, we don't need to create a new copy.
-		return o
-	}
-	return &log{core: o.core, fields: o.fields.Clone(0), ctx: o.ctx, caller: 2}
+	return &log{core: o.core, fields: o.fields.Clone(0), ctx: o.ctx, caller: internal.NewCallerReporter(n)}
 }
 
 // Format and record the current log.
@@ -363,21 +355,17 @@ func (o *log) record(level Level, message string) {
 	}
 }
 
-// Get the caller report.
-// If caller reporting is not enabled in the current log, an empty string is always returned.
+// Get the caller report. If caller reporting is not enabled in the current
+// log, an empty string is always returned.
 func (o *log) getCaller(level Level) string {
-	if o.caller != 2 {
-		if b, found := o.core.levelCaller[level]; found {
-			return b.GetCaller()
-		}
-		if o.core.caller != nil {
-			return o.core.caller.GetCaller()
-		}
-		// If caller reporting is forcibly enabled on the current log, we must
-		// ensure that a valid caller is obtained.
-		if o.caller == 1 {
-			return internal.DefaultCallerReporter.GetCaller()
-		}
+	if o.caller != nil {
+		return o.caller.GetCaller()
+	}
+	if caller, found := o.core.levelCaller[level]; found {
+		return caller.GetCaller()
+	}
+	if o.core.caller != nil {
+		return o.core.caller.GetCaller()
 	}
 	return ""
 }
