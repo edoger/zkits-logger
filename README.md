@@ -13,12 +13,12 @@
 This package is a library of ZKits project.
 This is a zero-dependency standard JSON log library that supports structured JSON logs and is compatible with the standard library.
 
-- Flexible and controllable caller report.
-- Support 7 log levels.
-- Complete log standard library compatibility.
-- Chained call, supporting additional log context data.
-- Flexible log hook support.
-- Custom log formatter support.
+  - Flexible and controllable caller report.
+  - Support 7 log levels.
+  - Complete log standard library compatibility.
+  - Chained call, supporting additional log context data.
+  - Flexible log hook support.
+  - Custom log formatter support.
 
 ## Install ##
 
