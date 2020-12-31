@@ -25,12 +25,13 @@ import (
 func TestLogEntityAndSummary(t *testing.T) {
 	now := time.Now()
 	var o Summary = &logEntity{
-		name:    "test",
-		time:    now,
-		level:   InfoLevel,
-		message: "foo",
-		fields:  map[string]interface{}{"key": "foo"},
-		caller:  "foo.go:1",
+		name:       "test",
+		time:       now,
+		timeFormat: time.RFC3339,
+		level:      InfoLevel,
+		message:    "foo",
+		fields:     map[string]interface{}{"key": "foo"},
+		caller:     "foo.go:1",
 	}
 
 	o.(*logEntity).buffer.WriteString("test")
@@ -40,6 +41,9 @@ func TestLogEntityAndSummary(t *testing.T) {
 	}
 	if got := o.Time(); !got.Equal(now) {
 		t.Fatalf("Summary.Time(): %s", got)
+	}
+	if got := o.TimeString(); got != now.Format(time.RFC3339) {
+		t.Fatalf("Summary.TimeString(): %s", got)
 	}
 	if got := o.Level(); got != InfoLevel {
 		t.Fatalf("Summary.Level(): %s", got.String())

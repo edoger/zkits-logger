@@ -29,6 +29,9 @@ type Entity interface {
 	// Time returns the log time.
 	Time() time.Time
 
+	// TimeString returns the log time string formatted with the default time format.
+	TimeString() string
+
 	// Level returns the log level.
 	Level() Level
 
@@ -66,14 +69,15 @@ type Summary interface {
 
 // The logEntity type is a built-in implementation of the Entity interface.
 type logEntity struct {
-	name    string
-	time    time.Time
-	level   Level
-	message string
-	fields  map[string]interface{}
-	ctx     context.Context
-	buffer  bytes.Buffer
-	caller  string
+	name       string
+	time       time.Time
+	timeFormat string
+	level      Level
+	message    string
+	fields     map[string]interface{}
+	ctx        context.Context
+	buffer     bytes.Buffer
+	caller     string
 }
 
 // Name returns the logger name.
@@ -84,6 +88,11 @@ func (o *logEntity) Name() string {
 // Time returns the log time.
 func (o *logEntity) Time() time.Time {
 	return o.time
+}
+
+// TimeString returns the log time string formatted with the default time format.
+func (o *logEntity) TimeString() string {
+	return o.time.Format(o.timeFormat)
 }
 
 // Level returns the log level.
