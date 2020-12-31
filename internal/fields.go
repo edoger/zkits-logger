@@ -43,7 +43,7 @@ func (fs Fields) With(src map[string]interface{}) Fields {
 	return r
 }
 
-// StandardiseFieldsForJSONEncoder standardizes the given log additional fields.
+// StandardiseFieldsForJSONEncoder standardizes the given log fields.
 func StandardiseFieldsForJSONEncoder(src map[string]interface{}) map[string]interface{} {
 	dst := make(map[string]interface{}, len(src))
 	for k, v := range src {
