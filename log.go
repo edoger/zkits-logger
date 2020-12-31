@@ -216,6 +216,7 @@ func (c *core) getEntity(l *log, level Level, message, caller string) *logEntity
 
 	o.name = c.name
 	o.time = c.nowFunc()
+	o.timeFormat = c.timeFormat
 	o.level = level
 	o.message = message
 	o.fields = l.fields
@@ -236,6 +237,7 @@ func (c *core) putEntity(o *logEntity) {
 	}
 
 	o.name = ""
+	o.timeFormat = ""
 	o.message = ""
 	o.fields = nil
 	o.ctx = nil
@@ -295,38 +297,10 @@ func (o *log) WithCaller(skip ...int) Log {
 
 // Format and record the current log.
 func (o *log) record(level Level, message string) {
-	caller := o.getCaller(level)
-	entity := o.core.getEntity(o, level, message, caller)
+	entity := o.core.getEntity(o, level, message, o.getCaller(level))
 	defer o.core.putEntity(entity)
 
-	var err error
-	if formatter := o.core.formatter; formatter == nil {
-		kv := map[string]interface{}{
-			"name":    entity.name,
-			"time":    entity.time.Format(o.core.timeFormat),
-			"level":   level.String(),
-			"message": message,
-		}
-		if len(o.fields) > 0 {
-			fields := make(map[string]interface{}, len(o.fields))
-			for k, v := range o.fields {
-				if err, ok := v.(error); ok {
-					fields[k] = err.Error()
-				} else {
-					fields[k] = v
-				}
-			}
-			kv["fields"] = fields
-		}
-		if caller != "" {
-			kv["caller"] = caller
-		}
-		err = json.NewEncoder(&entity.buffer).Encode(kv)
-	} else {
-		err = formatter.Format(entity, &entity.buffer)
-	}
-
-	if err != nil {
+	if err := o.format(entity); err != nil {
 		// When the format log fails, we terminate the logging and report the error.
 		internal.EchoError("Failed to format log: %s", err)
 	} else {
@@ -334,12 +308,7 @@ func (o *log) record(level Level, message string) {
 		if err != nil {
 			internal.EchoError("Failed to fire hook: %s", err)
 		}
-
-		if writer, found := o.core.levelWriter[level]; found && writer != nil {
-			_, err = writer.Write(entity.Bytes())
-		} else {
-			_, err = o.core.writer.Write(entity.Bytes())
-		}
+		err = o.write(entity)
 		if err != nil {
 			internal.EchoError("Failed to write log: %s", err)
 		}
@@ -353,6 +322,37 @@ func (o *log) record(level Level, message string) {
 			o.core.panicFunc(message)
 		}
 	}
+}
+
+// Format the current log.
+func (o *log) format(entity *logEntity) error {
+	if formatter := o.core.formatter; formatter != nil {
+		return formatter.Format(entity, &entity.buffer)
+	}
+
+	kv := map[string]interface{}{
+		"name":    entity.name,
+		"time":    entity.TimeString(),
+		"level":   entity.level.String(),
+		"message": entity.message,
+	}
+	if len(o.fields) > 0 {
+		kv["fields"] = internal.StandardiseFieldsForJSONEncoder(o.fields)
+	}
+	if entity.caller != "" {
+		kv["caller"] = entity.caller
+	}
+	return json.NewEncoder(&entity.buffer).Encode(kv)
+}
+
+// Write the current log.
+func (o *log) write(entity *logEntity) (err error) {
+	if writer, found := o.core.levelWriter[entity.level]; found && writer != nil {
+		_, err = writer.Write(entity.Bytes())
+	} else {
+		_, err = o.core.writer.Write(entity.Bytes())
+	}
+	return
 }
 
 // Get the caller report. If caller reporting is not enabled in the current

@@ -42,3 +42,19 @@ func (fs Fields) With(src map[string]interface{}) Fields {
 	}
 	return r
 }
+
+// StandardiseFieldsForJSONEncoder standardizes the given log additional fields.
+func StandardiseFieldsForJSONEncoder(src map[string]interface{}) map[string]interface{} {
+	dst := make(map[string]interface{}, len(src))
+	for k, v := range src {
+		switch o := v.(type) {
+		case error:
+			// The json.Marshal will convert some errors into "{}", we need to call
+			// the error.Error() method before JSON encoding.
+			dst[k] = o.Error()
+		default:
+			dst[k] = v
+		}
+	}
+	return dst
+}
