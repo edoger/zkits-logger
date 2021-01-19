@@ -552,7 +552,7 @@ func TestLoggerHookError(t *testing.T) {
 
 	o.Trace("foo")
 
-	if got := buf.String(); got != "Failed to fire hook: hook\n" {
+	if got := buf.String(); got != "Failed to fire log hook: hook\n" {
 		t.Fatalf("Hook: %s", got)
 	}
 }
