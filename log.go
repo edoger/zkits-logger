@@ -306,7 +306,7 @@ func (o *log) record(level Level, message string) {
 	} else {
 		err = o.core.hooks.Fire(entity)
 		if err != nil {
-			internal.EchoError("Failed to fire hook: %s", err)
+			internal.EchoError("Failed to fire log hook: %s", err)
 		}
 		err = o.write(entity)
 		if err != nil {
