@@ -308,9 +308,11 @@ func (o *log) record(level Level, message string) {
 		if err != nil {
 			internal.EchoError("Failed to fire log hook: %s", err)
 		}
-		err = o.write(entity)
-		if err != nil {
-			internal.EchoError("Failed to write log: %s", err)
+		if entity.Size() > 0 {
+			err = o.write(entity)
+			if err != nil {
+				internal.EchoError("Failed to write log: %s", err)
+			}
 		}
 	}
 
