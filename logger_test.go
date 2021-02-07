@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -636,5 +637,28 @@ func TestLogger_BigLog(t *testing.T) {
 	n := o.(*logger).core.pool.Get().(*logEntity).buffer.Cap()
 	if n > 1024 {
 		t.Fatalf("Big log: %d", n)
+	}
+}
+
+func TestLogger_Interceptor(t *testing.T) {
+	w1 := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w1)
+	o.SetLevel(TraceLevel)
+
+	w2 := new(bytes.Buffer)
+	interceptor := func(summary Summary, writer io.Writer) (int, error) {
+		return w2.Write([]byte(summary.Message())) // message only
+	}
+	if o.SetOutputInterceptor(interceptor) == nil {
+		t.Fatal("Logger.SetOutputInterceptor(): nil")
+	}
+
+	o.Echo("foo")
+	if got := w1.String(); got != "" {
+		t.Fatalf("Logger.SetOutputInterceptor(): got %s", got)
+	}
+	if got := w2.String(); got != "foo" {
+		t.Fatalf("Logger.SetOutputInterceptor(): got %s", got)
 	}
 }
