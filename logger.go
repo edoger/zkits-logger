@@ -41,6 +41,10 @@ type Logger interface {
 	// If the given writer is nil, the level writer will be disabled.
 	SetLevelOutput(level Level, w io.Writer) Logger
 
+	// SetOutputInterceptor sets the output interceptor for the current logger.
+	// If the given interceptor is nil, the log data is written to the output writer.
+	SetOutputInterceptor(func(Summary, io.Writer) (int, error)) Logger
+
 	// SetNowFunc sets the function that gets the current time.
 	// If the given function is nil, time.Now is used.
 	SetNowFunc(func() time.Time) Logger
@@ -116,6 +120,13 @@ func (o *logger) SetOutput(w io.Writer) Logger {
 // If the given writer is nil, the level writer will be disabled.
 func (o *logger) SetLevelOutput(level Level, w io.Writer) Logger {
 	o.core.levelWriter[level] = w
+	return o
+}
+
+// SetOutputInterceptor sets the output interceptor for the current logger.
+// If the given interceptor is nil, the log data is written to the output writer.
+func (o *logger) SetOutputInterceptor(f func(Summary, io.Writer) (int, error)) Logger {
+	o.core.interceptor = f
 	return o
 }
 

@@ -191,6 +191,7 @@ type core struct {
 	panicFunc   func(string)
 	caller      *internal.CallerReporter
 	levelCaller map[Level]*internal.CallerReporter
+	interceptor func(Summary, io.Writer) (int, error)
 }
 
 // Create a new core instance and bind the logger name.
@@ -308,11 +309,9 @@ func (o *log) record(level Level, message string) {
 		if err != nil {
 			internal.EchoError("Failed to fire log hook: %s", err)
 		}
-		if entity.Size() > 0 {
-			err = o.write(entity)
-			if err != nil {
-				internal.EchoError("Failed to write log: %s", err)
-			}
+		err = o.write(entity)
+		if err != nil {
+			internal.EchoError("Failed to write log: %s", err)
 		}
 	}
 
@@ -349,10 +348,19 @@ func (o *log) format(entity *logEntity) error {
 
 // Write the current log.
 func (o *log) write(entity *logEntity) (err error) {
+	var w io.Writer
 	if writer, found := o.core.levelWriter[entity.level]; found && writer != nil {
-		_, err = writer.Write(entity.Bytes())
+		w = writer
 	} else {
-		_, err = o.core.writer.Write(entity.Bytes())
+		w = o.core.writer
+	}
+	if o.core.interceptor == nil {
+		// When there is no interceptor, make sure that the log written is not empty.
+		if entity.Size() > 0 {
+			_, err = w.Write(entity.Bytes())
+		}
+	} else {
+		_, err = o.core.interceptor(entity, w)
 	}
 	return
 }
