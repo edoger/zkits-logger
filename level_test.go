@@ -15,8 +15,20 @@
 package logger
 
 import (
+	"fmt"
 	"testing"
 )
+
+func TestAllLevels(t *testing.T) {
+	ls := AllLevels()
+	if len(ls) != 7 {
+		t.Fatalf("AllLevels(): %v", ls)
+	}
+	want := []Level{PanicLevel, FatalLevel, ErrorLevel, WarnLevel, InfoLevel, DebugLevel, TraceLevel}
+	if fmt.Sprint(ls) != fmt.Sprint(want) {
+		t.Fatalf("AllLevels(): %v", ls)
+	}
+}
 
 func TestLevel_String(t *testing.T) {
 	items := []struct {
