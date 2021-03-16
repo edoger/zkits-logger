@@ -2,9 +2,21 @@
 build: off
 version: "{build}"
 
-before_test:
+environment:
+  COVERALLS_TOKEN:
+    secure: LsDIn6FOXV3WbTT9uysdGlgUCWU/i03BbCagBUPVQpv+7s69w9SEKHnJaBeZytgm
+
+init:
+  # Add GOPATH/bin and GOROOT/bin to PATH.
+  - SET PATH=c:\Users\appveyor\go\bin;c:\go\bin;%PATH%
+
+install:
   - go env
   - go version
 
 test_script:
   - go test -v -coverprofile=coverage.out -covermode=count ./...
+
+on_success:
+  - go get -v -u github.com/mattn/goveralls
+  - goveralls -coverprofile=coverage.out -service=appveyor -repotoken %COVERALLS_TOKEN%
