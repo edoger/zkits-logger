@@ -531,7 +531,7 @@ func TestLoggerFormatterError(t *testing.T) {
 
 	o.Trace("foo")
 
-	if got := buf.String(); got != "Failed to format log: formatter\n" {
+	if got := buf.String(); got != "(test) Failed to format log: formatter\n" {
 		t.Fatalf("Formatter: %s", got)
 	}
 }
@@ -553,7 +553,7 @@ func TestLoggerHookError(t *testing.T) {
 
 	o.Trace("foo")
 
-	if got := buf.String(); got != "Failed to fire log hook: hook\n" {
+	if got := buf.String(); got != "(test) Failed to fire log hook: hook\n" {
 		t.Fatalf("Hook: %s", got)
 	}
 }
@@ -577,7 +577,7 @@ func TestLoggerWriterError(t *testing.T) {
 
 	o.Trace("foo")
 
-	if got := buf.String(); got != "Failed to write log: writer\n" {
+	if got := buf.String(); got != "(test) Failed to write log: writer\n" {
 		t.Fatalf("Writer: %s", got)
 	}
 }

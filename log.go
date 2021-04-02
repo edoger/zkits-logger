@@ -303,15 +303,15 @@ func (o *log) record(level Level, message string) {
 
 	if err := o.format(entity); err != nil {
 		// When the format log fails, we terminate the logging and report the error.
-		internal.EchoError("Failed to format log: %s", err)
+		internal.EchoError("(%s) Failed to format log: %s", o.core.name, err)
 	} else {
 		err = o.core.hooks.Fire(entity)
 		if err != nil {
-			internal.EchoError("Failed to fire log hook: %s", err)
+			internal.EchoError("(%s) Failed to fire log hook: %s", o.core.name, err)
 		}
 		err = o.write(entity)
 		if err != nil {
-			internal.EchoError("Failed to write log: %s", err)
+			internal.EchoError("(%s) Failed to write log: %s", o.core.name, err)
 		}
 	}
 
