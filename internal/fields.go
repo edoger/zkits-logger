@@ -14,6 +14,12 @@
 
 package internal
 
+import (
+	"fmt"
+	"sort"
+	"strings"
+)
+
 // Fields type defines the dynamic field collection of the log.
 // After Fields are created, their stored keys will not change.
 type Fields map[string]interface{}
@@ -57,4 +63,22 @@ func StandardiseFieldsForJSONEncoder(src map[string]interface{}) map[string]inte
 		}
 	}
 	return dst
+}
+
+// FormatFieldsToText standardizes the given log fields.
+func FormatFieldsToText(src map[string]interface{}) string {
+	texts := make([]string, 0, len(src))
+	for k, v := range src {
+		switch o := v.(type) {
+		case []byte:
+			texts = append(texts, k+"="+string(o))
+		default:
+			texts = append(texts, k+"="+fmt.Sprint(v))
+		}
+	}
+	// Ensure that the order of log extension fields is consistent.
+	if len(texts) > 1 {
+		sort.Strings(texts)
+	}
+	return strings.Join(texts, ", ")
 }

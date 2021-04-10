@@ -15,7 +15,7 @@ install:
   - go version
 
 test_script:
-  - go test -v -coverprofile=coverage.out -covermode=count ./...
+  - go test -v -coverprofile=coverage.out -covermode=atomic ./...
 
 on_success:
   - go get -v -u github.com/mattn/goveralls
