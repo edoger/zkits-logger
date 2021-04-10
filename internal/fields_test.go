@@ -15,6 +15,8 @@
 package internal
 
 import (
+	"encoding/json"
+	"errors"
 	"testing"
 )
 
@@ -55,5 +57,35 @@ func TestFields_With(t *testing.T) {
 		if s := got["key2"].(string); s != "bar" {
 			t.Fatalf("Fields.With(): %v", s)
 		}
+	}
+}
+
+func TestStandardiseFieldsForJSONEncoder(t *testing.T) {
+	src := map[string]interface{}{
+		"foo": 1,
+		"bar": errors.New("bar"),
+	}
+	dst := StandardiseFieldsForJSONEncoder(src)
+
+	bs, err := json.Marshal(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"bar":"bar","foo":1}`
+	got := string(bs)
+	if want != got {
+		t.Fatalf("StandardiseFieldsForJSONEncoder(): want %q, got %q", want, got)
+	}
+}
+
+func TestFormatFieldsToText(t *testing.T) {
+	want := `bar=bar, foo=1`
+	got := FormatFieldsToText(map[string]interface{}{
+		"foo": 1,
+		"bar": []byte("bar"),
+	})
+	if want != got {
+		t.Fatalf("FormatFieldsToText(): want %q, got %q", want, got)
 	}
 }
