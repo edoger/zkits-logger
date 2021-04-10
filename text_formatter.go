@@ -27,6 +27,14 @@ import (
 // This regular expression is used to analyze placeholders in text formatter format.
 var formatRegexp = regexp.MustCompile(`{(name|time|level|message|caller|fields)(?:@?([^{}]*)?)?}`)
 
+// The default text formatter.
+var defaultTextFormatter = MustNewTextFormatter("{name}:[{time}][{level}] {message}{caller}{fields}", false)
+
+// DefaultTextFormatter returns the default text formatter.
+func DefaultTextFormatter() Formatter {
+	return defaultTextFormatter
+}
+
 // NewTextFormatter creates and returns an instance of the log text formatter.
 // The format parameter is used to control the format of the log, and it has many control parameters.
 // For example:
@@ -45,6 +53,9 @@ var formatRegexp = regexp.MustCompile(`{(name|time|level|message|caller|fields)(
 //        {level@s} will call the Level.ShortString method.
 //        {level@c} will call the Level.CapitalString method.
 //        For other will call the Level.String method.
+//     3. Considering the aesthetics of the format, for {caller} and {fields}, if
+//        there is non-empty data, a space will be automatically added in front.
+//        If this behavior is not needed, use {caller@?} or {fields@?} parameters.
 // The quote parameter is used to escape invisible characters in the log.
 func NewTextFormatter(format string, quote bool) (Formatter, error) {
 	sub := formatRegexp.FindAllStringSubmatch(format, -1)
@@ -53,7 +64,7 @@ func NewTextFormatter(format string, quote bool) (Formatter, error) {
 	}
 	// If sub is not empty, then idx is definitely not empty.
 	idx := formatRegexp.FindAllStringIndex(format, -1)
-	f := &textFormatter{quote: quote}
+	f := &textFormatter{quote: quote, callerPrefix: " ", fieldsPrefix: " "}
 
 	var parts []string
 	var start int
@@ -72,8 +83,14 @@ func NewTextFormatter(format string, quote bool) (Formatter, error) {
 			f.encoders = append(f.encoders, f.encodeMessage)
 		case "caller":
 			f.encoders = append(f.encoders, f.encodeCaller)
+			if args == "?" {
+				f.callerPrefix = ""
+			}
 		case "fields":
 			f.encoders = append(f.encoders, f.encodeFields)
+			if args == "?" {
+				f.fieldsPrefix = ""
+			}
 		}
 		parts = append(parts, format[start:idx[i][0]])
 		start = idx[i][1]
@@ -94,11 +111,13 @@ func MustNewTextFormatter(format string, quote bool) Formatter {
 
 // The built-in text formatter.
 type textFormatter struct {
-	format      string
-	quote       bool
-	encoders    []func(Entity) string
-	timeFormat  string
-	levelFormat string
+	format       string
+	quote        bool
+	encoders     []func(Entity) string
+	timeFormat   string
+	levelFormat  string
+	callerPrefix string
+	fieldsPrefix string
 }
 
 // Format formats the given log entity into character data and writes it to the given buffer.
@@ -148,7 +167,10 @@ func (f *textFormatter) encodeTime(e Entity) string {
 
 // Encode the caller of the log.
 func (f *textFormatter) encodeCaller(e Entity) string {
-	return e.Caller()
+	if s := e.Caller(); s != "" {
+		return f.callerPrefix + s
+	}
+	return ""
 }
 
 // Encode the message of the log.
@@ -159,7 +181,7 @@ func (f *textFormatter) encodeMessage(e Entity) string {
 // Encode the fields of the log.
 func (f *textFormatter) encodeFields(e Entity) string {
 	if fields := e.Fields(); len(fields) > 0 {
-		return internal.FormatFieldsToText(e.Fields())
+		return f.fieldsPrefix + internal.FormatFieldsToText(e.Fields())
 	}
 	return ""
 }

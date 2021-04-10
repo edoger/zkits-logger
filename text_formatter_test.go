@@ -19,6 +19,12 @@ import (
 	"testing"
 )
 
+func TestDefaultTextFormatter(t *testing.T) {
+	if DefaultTextFormatter() == nil {
+		t.Fatal("DefaultTextFormatter(): nil")
+	}
+}
+
 func TestNewTextFormatter(t *testing.T) {
 	format := "[{name}][{time@2006-01-02 15:04:05}][{level@sc}] {caller} {message} {fields}"
 	if f, err := NewTextFormatter(format, true); err != nil {
@@ -58,7 +64,7 @@ func TestMustNewTextFormatter(t *testing.T) {
 
 func TestTextFormatter_Format(t *testing.T) {
 	l := New("test")
-	l.SetFormatter(MustNewTextFormatter("{name} - {time@test} [{level@sc}] {caller} {message} {fields}", true))
+	l.SetFormatter(MustNewTextFormatter("{name} - {time@test} [{level@sc}] {caller@?} {message} {fields@?}", true))
 	buf := new(bytes.Buffer)
 	l.SetOutput(buf)
 
@@ -71,7 +77,7 @@ func TestTextFormatter_Format(t *testing.T) {
 	}
 
 	buf.Reset()
-	l.SetFormatter(MustNewTextFormatter("{name} - {time@test} [{level@sc}] {caller} {message} {fields}", false))
+	l.SetFormatter(MustNewTextFormatter("{name} - {time@test} [{level@sc}] {caller@?} {message} {fields@?}", false))
 
 	l.WithField("foo", 1).WithField("bar", []byte("bar")).Info("test\n test")
 
@@ -82,7 +88,7 @@ func TestTextFormatter_Format(t *testing.T) {
 	}
 
 	buf.Reset()
-	l.SetFormatter(MustNewTextFormatter("{name} - {time@test} [{level@s}] {caller} {message} {fields}", true))
+	l.SetFormatter(MustNewTextFormatter("{name} - {time@test} [{level@s}] {caller@?} {message} {fields@?}", true))
 
 	l.Info("test")
 
@@ -93,7 +99,7 @@ func TestTextFormatter_Format(t *testing.T) {
 	}
 
 	buf.Reset()
-	l.SetFormatter(MustNewTextFormatter("{name} - {time@test} [{level@c}] {caller} {message} {fields}", true))
+	l.SetFormatter(MustNewTextFormatter("{name} - {time@test} [{level@c}] {caller@?} {message} {fields@?}", true))
 
 	l.Info("test")
 
@@ -104,7 +110,7 @@ func TestTextFormatter_Format(t *testing.T) {
 	}
 
 	buf.Reset()
-	l.SetFormatter(MustNewTextFormatter("{name} - {time} [{level}] {caller} {message} {fields}", true))
+	l.SetFormatter(MustNewTextFormatter("{name} - {time} [{level}] {caller@?} {message} {fields@?}", true))
 	l.SetDefaultTimeFormat("test")
 	l.Info("test")
 
