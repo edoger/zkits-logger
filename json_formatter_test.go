@@ -34,7 +34,7 @@ func TestNewJSONFormatter(t *testing.T) {
 		t.Fatal("NewJSONFormatter(): nil")
 	}
 
-	f, err = NewJSONFormatter(map[string]string{"hello": "hello"}, true)
+	_, err = NewJSONFormatter(map[string]string{"hello": "hello"}, true)
 	if err == nil {
 		t.Fatal("NewJSONFormatter(): no error")
 	}
