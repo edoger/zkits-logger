@@ -72,7 +72,7 @@ type Logger interface {
 	// EnableCaller enables caller reporting on all levels of logs.
 	EnableCaller(...int) Logger
 
-	// EnableCaller enables caller reporting on logs of a given level.
+	// EnableLevelCaller enables caller reporting on logs of a given level.
 	EnableLevelCaller(Level, ...int) Logger
 
 	// AddHook adds the given log hook to the current logger.
@@ -170,7 +170,11 @@ func (o *logger) SetPanicFunc(f func(string)) Logger {
 // SetFormatter sets the log formatter for the current logger.
 // If the given log formatter is nil, we will record the log in JSON format.
 func (o *logger) SetFormatter(formatter Formatter) Logger {
-	o.core.formatter = formatter
+	if formatter == nil {
+		o.core.formatter = DefaultJSONFormatter()
+	} else {
+		o.core.formatter = formatter
+	}
 	return o
 }
 
@@ -195,7 +199,7 @@ func (o *logger) EnableCaller(skip ...int) Logger {
 	return o
 }
 
-// EnableCaller enables caller reporting on logs of a given level.
+// EnableLevelCaller enables caller reporting on logs of a given level.
 func (o *logger) EnableLevelCaller(level Level, skip ...int) Logger {
 	var n int
 	if len(skip) > 0 && skip[0] > 0 {

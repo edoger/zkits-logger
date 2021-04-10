@@ -17,7 +17,6 @@ package logger
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -132,7 +131,7 @@ type Log interface {
 	// Warningln uses the given parameters to record a WarnLevel log.
 	Warningln(...interface{})
 
-	// Warningln uses the given parameters to record a WarnLevel log.
+	// Warningf uses the given parameters to record a WarnLevel log.
 	Warningf(string, ...interface{})
 
 	// Error uses the given parameters to record a ErrorLevel log.
@@ -199,6 +198,7 @@ func newCore(name string) *core {
 	return &core{
 		name:        name,
 		level:       TraceLevel,
+		formatter:   DefaultJSONFormatter(),
 		writer:      os.Stdout,
 		levelWriter: make(map[Level]io.Writer),
 		pool:        sync.Pool{New: func() interface{} { return new(logEntity) }},
@@ -301,7 +301,7 @@ func (o *log) record(level Level, message string) {
 	entity := o.core.getEntity(o, level, message, o.getCaller(level))
 	defer o.core.putEntity(entity)
 
-	if err := o.format(entity); err != nil {
+	if err := o.core.formatter.Format(entity, &entity.buffer); err != nil {
 		// When the format log fails, we terminate the logging and report the error.
 		internal.EchoError("(%s) Failed to format log: %s", o.core.name, err)
 	} else {
@@ -323,27 +323,6 @@ func (o *log) record(level Level, message string) {
 			o.core.panicFunc(message)
 		}
 	}
-}
-
-// Format the current log.
-func (o *log) format(entity *logEntity) error {
-	if formatter := o.core.formatter; formatter != nil {
-		return formatter.Format(entity, &entity.buffer)
-	}
-
-	kv := map[string]interface{}{
-		"name":    entity.name,
-		"time":    entity.TimeString(),
-		"level":   entity.level.String(),
-		"message": entity.message,
-	}
-	if len(o.fields) > 0 {
-		kv["fields"] = internal.StandardiseFieldsForJSONEncoder(o.fields)
-	}
-	if entity.caller != "" {
-		kv["caller"] = entity.caller
-	}
-	return json.NewEncoder(&entity.buffer).Encode(kv)
 }
 
 // Write the current log.
