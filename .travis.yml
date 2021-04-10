@@ -7,7 +7,7 @@ go:
   - 1.16.x
 
 script:
-  - go test -v -coverprofile=coverage.out -covermode=count ./...
+  - go test -v -coverprofile=coverage.out -covermode=atomic ./...
 
 before_script:
   - go env
