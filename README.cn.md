@@ -1,6 +1,6 @@
 # ZKits Logger Library #
 
-English | [简体中文](README.cn.md)
+[English](README.md) | 简体中文
 
 [![ZKits](https://img.shields.io/badge/ZKits-Library-f3c)](https://github.com/edoger/zkits-logger)
 [![Build Status](https://travis-ci.org/edoger/zkits-logger.svg?branch=master)](https://travis-ci.org/edoger/zkits-logger)
@@ -10,25 +10,24 @@ English | [简体中文](README.cn.md)
 [![Go Report Card](https://goreportcard.com/badge/github.com/edoger/zkits-logger)](https://goreportcard.com/report/github.com/edoger/zkits-logger)
 [![Golang Version](https://img.shields.io/badge/golang-1.13+-orange)](https://github.com/edoger/zkits-logger)
 
-## About ##
+## 简介 ##
 
-This package is a library of ZKits project.
-This is a zero-dependency standard JSON log library that supports structured JSON logs and is compatible with the standard library.
+这个库是 ZKits 项目的一部分，我们在这里提供了一个完整的零依赖的JSON日志库，与日志标准库完全兼容。
 
- - Flexible and controllable caller report.
- - Support 7 log levels.
- - Complete log standard library compatibility.
- - Chained call, supporting additional log context data.
- - Flexible log hook support.
- - Custom log formatter support.
+- 灵活可控的日志 Caller 报告，支持按日志级别报告。
+- 支持 7 种标准的日志级别。
+- 与 Golang 标准库完全兼容。
+- 链式调用，支持为每条日志添加扩展字段，更方便排查应用程序的问题。
+- 灵活的日志钩子支持。
+- 高度可定制的日志格式，可自由配置日志格式化器。
 
-## Install ##
+## 安装 ##
 
 ```sh
 go get -u -v github.com/edoger/zkits-logger
 ```
 
-## Usage ##
+## 使用指南 ##
 
 ```go
 package main
@@ -38,7 +37,7 @@ import (
 )
 
 func main() {
-    // Creates a logger instance with the specified name.
+    // 创建一个指定名称的日志记录器。
     log := logger.New("test")
 
     // {"level":"info","message":"Something happened.","name":"test","time":"2020-02-20T20:20:20+08:00"}
@@ -49,6 +48,6 @@ func main() {
 }
 ```
 
-## License ##
+## 许可证 ##
 
 [Apache-2.0](http://www.apache.org/licenses/LICENSE-2.0)
