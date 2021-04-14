@@ -24,6 +24,15 @@ import (
 // After Fields are created, their stored keys will not change.
 type Fields map[string]interface{}
 
+// MakeFields creates and returns Fields from a given parameter.
+func MakeFields(src map[string]interface{}) Fields {
+	r := make(Fields, len(src))
+	for k, v := range src {
+		r[k] = v
+	}
+	return r
+}
+
 // Clone returns a cloned Fields.
 // If n is given, the returned fields will be pre-expanded with equal capacity.
 func (fs Fields) Clone(n int) Fields {
