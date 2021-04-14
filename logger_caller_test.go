@@ -81,8 +81,8 @@ func TestLogger_WithCaller(t *testing.T) {
 	o.SetOutput(w)
 	o.SetLevel(TraceLevel)
 
-	o.WithCaller().Info("test")              // LINE 84
-	o.WithCaller().WithCaller().Info("test") // LINE 85
+	o.WithCaller().Info("test")               // LINE 84
+	o.WithCaller(1).WithCaller().WithCaller().Info("test") // LINE 85
 
 	got := w.String()
 	if !strings.Contains(got, "logger_caller_test.go:84") {

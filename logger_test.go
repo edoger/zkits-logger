@@ -398,7 +398,7 @@ func TestLogger_WithContext(t *testing.T) {
 	}
 
 	key := struct{}{}
-	o.WithContext(context.WithValue(context.Background(), key, "foo")).Trace("foo")
+	o.WithContext(context.Background()).WithContext(context.WithValue(context.Background(), key, "foo")).Trace("foo")
 	if ctx == nil {
 		t.Fatal("Context: nil")
 	}
@@ -428,7 +428,7 @@ func TestLogger_WithFields(t *testing.T) {
 		t.Fatalf("Fields: %v", got)
 	}
 
-	o.WithFields(map[string]interface{}{"key": "foo"}).Trace("foo")
+	o.WithFields(map[string]interface{}{"key": "bar"}).WithFields(map[string]interface{}{"key": "foo"}).Trace("foo")
 	if fields == nil {
 		t.Fatal("Fields: nil")
 	}

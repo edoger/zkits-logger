@@ -17,8 +17,22 @@ package internal
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
 )
+
+func TestMakeFields(t *testing.T) {
+	if got := MakeFields(nil); got == nil || len(got) != 0 {
+		t.Fatalf("MakeFields(): %v", got)
+	}
+	if got := MakeFields(map[string]interface{}{"a": "b"}); len(got) != 1 {
+		t.Fatalf("MakeFields(): %v", got)
+	} else {
+		if fmt.Sprint(got["a"]) != "b" {
+			t.Fatalf("MakeFields(): %v", got)
+		}
+	}
+}
 
 func TestFields_Clone(t *testing.T) {
 	src := Fields{}
