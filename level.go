@@ -60,11 +60,6 @@ var allLevels = map[Level][]string{
 	TraceLevel: {"trace", "TRACE", "tac", "TAC"},
 }
 
-// AllLevels returns all supported log levels.
-func AllLevels() []Level {
-	return []Level{PanicLevel, FatalLevel, ErrorLevel, WarnLevel, InfoLevel, DebugLevel, TraceLevel}
-}
-
 // String returns the string form of the current level.
 // If the log level is not supported, always returns "unknown".
 func (level Level) String() string {
