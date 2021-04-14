@@ -222,9 +222,7 @@ func (c *core) getEntity(l *log, level Level, message, caller string) *logEntity
 	o.message = message
 	o.ctx = l.ctx
 	o.caller = caller
-	if !l.root {
-		o.fields = l.fields
-	}
+	o.fields = l.fields
 
 	return o
 }
