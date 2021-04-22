@@ -30,9 +30,17 @@ var formatRegexp = regexp.MustCompile(`{(name|time|level|message|caller|fields)(
 // The default text formatter.
 var defaultTextFormatter = MustNewTextFormatter("{name}:[{time}][{level}] {message}{caller}{fields}", false)
 
+// The default quote text formatter.
+var defaultQuoteTextFormatter = MustNewTextFormatter("{name}:[{time}][{level}] {message}{caller}{fields}", true)
+
 // DefaultTextFormatter returns the default text formatter.
 func DefaultTextFormatter() Formatter {
 	return defaultTextFormatter
+}
+
+// DefaultQuoteTextFormatter returns the default quote text formatter.
+func DefaultQuoteTextFormatter() Formatter {
+	return defaultQuoteTextFormatter
 }
 
 // NewTextFormatter creates and returns an instance of the log text formatter.

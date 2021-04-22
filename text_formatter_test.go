@@ -25,6 +25,12 @@ func TestDefaultTextFormatter(t *testing.T) {
 	}
 }
 
+func TestDefaultQuoteTextFormatter(t *testing.T) {
+	if DefaultQuoteTextFormatter() == nil {
+		t.Fatal("DefaultQuoteTextFormatter(): nil")
+	}
+}
+
 func TestNewTextFormatter(t *testing.T) {
 	format := "[{name}][{time@2006-01-02 15:04:05}][{level@sc}] {caller} {message} {fields}"
 	if f, err := NewTextFormatter(format, true); err != nil {
