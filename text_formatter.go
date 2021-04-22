@@ -82,11 +82,23 @@ func NewTextFormatter(format string, quote bool) (Formatter, error) {
 		case "name":
 			f.encoders = append(f.encoders, f.encodeName)
 		case "time":
-			f.encoders = append(f.encoders, f.encodeTime)
-			f.timeFormat = args
+			if args == "" {
+				f.encoders = append(f.encoders, f.encodeTime)
+			} else {
+				f.timeFormat = args
+				f.encoders = append(f.encoders, f.encodeTimeWithFormat)
+			}
 		case "level":
-			f.encoders = append(f.encoders, f.encodeLevel)
-			f.levelFormat = args
+			switch args {
+			case "cs", "sc":
+				f.encoders = append(f.encoders, f.encodeShortCapitalLevel)
+			case "s":
+				f.encoders = append(f.encoders, f.encodeShortLevel)
+			case "c":
+				f.encoders = append(f.encoders, f.encodeCapitalLevel)
+			default:
+				f.encoders = append(f.encoders, f.encodeLevel)
+			}
 		case "message":
 			f.encoders = append(f.encoders, f.encodeMessage)
 		case "caller":
@@ -123,7 +135,6 @@ type textFormatter struct {
 	quote        bool
 	encoders     []func(Entity) string
 	timeFormat   string
-	levelFormat  string
 	callerPrefix string
 	fieldsPrefix string
 }
@@ -152,24 +163,31 @@ func (f *textFormatter) encodeName(e Entity) string {
 
 // Encode the level of the log.
 func (f *textFormatter) encodeLevel(e Entity) string {
-	if f.timeFormat != "" {
-		switch f.levelFormat {
-		case "sc", "cs":
-			return e.Level().ShortCapitalString()
-		case "s":
-			return e.Level().ShortString()
-		case "c":
-			return e.Level().CapitalString()
-		}
-	}
 	return e.Level().String()
+}
+
+// Encode the short capital level of the log.
+func (f *textFormatter) encodeShortCapitalLevel(e Entity) string {
+	return e.Level().ShortCapitalString()
+}
+
+// Encode the short level of the log.
+func (f *textFormatter) encodeShortLevel(e Entity) string {
+	return e.Level().ShortString()
+}
+
+// Encode the capital level of the log.
+func (f *textFormatter) encodeCapitalLevel(e Entity) string {
+	return e.Level().CapitalString()
 }
 
 // Encode the time of the log.
 func (f *textFormatter) encodeTime(e Entity) string {
-	if f.timeFormat == "" {
-		return e.TimeString()
-	}
+	return e.TimeString()
+}
+
+// Encode the time with format of the log.
+func (f *textFormatter) encodeTimeWithFormat(e Entity) string {
 	return e.Time().Format(f.timeFormat)
 }
 
