@@ -30,7 +30,7 @@ func TestTextFormatterCaller(t *testing.T) {
 	l.Info("test-caller") // Line 30
 
 	got := buf.String()
-	want := "test:[time][info] test-caller text_formatter_caller_test.go:30\n"
+	want := "test:[time][INF] test-caller text_formatter_caller_test.go:30\n"
 	if got != want {
 		t.Fatalf("TextFormatter.Format(): want %q, got %q", want, got)
 	}

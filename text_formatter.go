@@ -28,10 +28,10 @@ import (
 var formatRegexp = regexp.MustCompile(`{(name|time|level|message|caller|fields)(?:@?([^{}]*)?)?}`)
 
 // The default text formatter.
-var defaultTextFormatter = MustNewTextFormatter("{name}:[{time}][{level}] {message}{caller}{fields}", false)
+var defaultTextFormatter = MustNewTextFormatter("{name}:[{time}][{level@sc}] {message}{caller}{fields}", false)
 
 // The default quote text formatter.
-var defaultQuoteTextFormatter = MustNewTextFormatter("{name}:[{time}][{level}] {message}{caller}{fields}", true)
+var defaultQuoteTextFormatter = MustNewTextFormatter("{name}:[{time}][{level@sc}] {message}{caller}{fields}", true)
 
 // DefaultTextFormatter returns the default text formatter.
 func DefaultTextFormatter() Formatter {
