@@ -253,7 +253,6 @@ type log struct {
 	ctx    context.Context
 	fields internal.Fields
 	caller *internal.CallerReporter
-	root   bool // In the top level logger?
 }
 
 // Name returns the logger name.
@@ -263,7 +262,7 @@ func (o *log) Name() string {
 
 // WithField adds the given extended data to the log.
 func (o *log) WithField(key string, value interface{}) Log {
-	if o.root {
+	if len(o.fields) == 0 {
 		return &log{core: o.core, fields: internal.Fields{key: value}, ctx: o.ctx, caller: o.caller}
 	}
 	r := &log{core: o.core, fields: o.fields.Clone(1), ctx: o.ctx, caller: o.caller}
@@ -279,7 +278,7 @@ func (o *log) WithError(err error) Log {
 
 // WithFields adds the given multiple extended data to the log.
 func (o *log) WithFields(fields map[string]interface{}) Log {
-	if o.root {
+	if len(o.fields) == 0 {
 		return &log{core: o.core, fields: internal.MakeFields(fields), ctx: o.ctx, caller: o.caller}
 	}
 	return &log{core: o.core, fields: o.fields.With(fields), ctx: o.ctx, caller: o.caller}
@@ -287,10 +286,7 @@ func (o *log) WithFields(fields map[string]interface{}) Log {
 
 // WithContext adds the given context to the log.
 func (o *log) WithContext(ctx context.Context) Log {
-	if o.root {
-		return &log{core: o.core, ctx: ctx, caller: o.caller}
-	}
-	return &log{core: o.core, fields: o.fields.Clone(0), ctx: ctx, caller: o.caller}
+	return &log{core: o.core, fields: o.fields, ctx: ctx, caller: o.caller}
 }
 
 // WithCaller forces the caller report of the current log to be enabled.
@@ -303,10 +299,7 @@ func (o *log) WithCaller(skip ...int) Log {
 	if o.caller != nil && o.caller.Equal(n) {
 		return o
 	}
-	if o.root {
-		return &log{core: o.core, ctx: o.ctx, caller: internal.NewCallerReporter(n)}
-	}
-	return &log{core: o.core, fields: o.fields.Clone(0), ctx: o.ctx, caller: internal.NewCallerReporter(n)}
+	return &log{core: o.core, fields: o.fields, ctx: o.ctx, caller: internal.NewCallerReporter(n)}
 }
 
 // Format and record the current log.

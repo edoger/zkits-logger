@@ -85,7 +85,7 @@ type Logger interface {
 // New creates a new Logger instance.
 // By default, the logger level is TraceLevel and logs will be output to os.Stdout.
 func New(name string) Logger {
-	return &logger{log{core: newCore(name), root: true}}
+	return &logger{log{core: newCore(name)}}
 }
 
 // The logger type is an implementation of the built-in logger interface.
