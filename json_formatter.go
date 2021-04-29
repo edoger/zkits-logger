@@ -39,13 +39,16 @@ func NewJSONFormatter(keys map[string]string, full bool) (Formatter, error) {
 		"name": "name", "time": "time", "level": "level", "message": "message",
 		"fields": "fields", "caller": "caller",
 	}
+
+	changed := true
 	if len(keys) > 0 {
 		for key, value := range keys {
 			if m[key] == "" {
 				return nil, fmt.Errorf("invalid json formatter key %q", key)
 			}
 			// We ignore the case where all fields are mapped as empty, which is more practical.
-			if value != "" {
+			if value != "" && m[key] != value {
+				changed = false
 				m[key] = value
 			}
 		}
@@ -53,7 +56,7 @@ func NewJSONFormatter(keys map[string]string, full bool) (Formatter, error) {
 	f := &jsonFormatter{
 		name: m["name"], time: m["time"], level: m["level"], message: m["message"],
 		fields: m["fields"], caller: m["caller"],
-		full: full,
+		full: full, changed: changed,
 	}
 	return f, nil
 }
@@ -76,10 +79,45 @@ type jsonFormatter struct {
 	fields  string
 	caller  string
 	full    bool
+	changed bool
+}
+
+// Special built-in structure for json serialization.
+// The order of fields cannot be changed.
+type jsonFormatterObject struct {
+	Caller  *string     `json:"caller,omitempty"`
+	Fields  interface{} `json:"fields,omitempty"` // map[string]interface{} or struct{}
+	Level   string      `json:"level"`
+	Message string      `json:"message"`
+	Name    string      `json:"name"`
+	Time    string      `json:"time"`
 }
 
 // Format formats the given log entity into character data and writes it to the given buffer.
 func (f *jsonFormatter) Format(e Entity, b *bytes.Buffer) error {
+	// In most cases, the performance of json serialization of structure is higher than
+	// that of json serialization of map. When the json field name has not changed, we
+	// try to use structure for json serialization.
+	if f.changed {
+		o := &jsonFormatterObject{
+			Level:   e.Level().String(),
+			Message: e.Message(),
+			Name:    e.Name(),
+			Time:    e.TimeString(),
+		}
+		if fields := e.Fields(); len(fields) > 0 {
+			o.Fields = internal.StandardiseFieldsForJSONEncoder(fields)
+		} else {
+			if f.full {
+				o.Fields = struct{}{}
+			}
+		}
+		if caller := e.Caller(); f.full || caller != "" {
+			o.Caller = &caller
+		}
+		return json.NewEncoder(b).Encode(o)
+	}
+
 	kv := map[string]interface{}{
 		f.name:    e.Name(),
 		f.time:    e.TimeString(),
@@ -93,12 +131,8 @@ func (f *jsonFormatter) Format(e Entity, b *bytes.Buffer) error {
 			kv[f.fields] = struct{}{}
 		}
 	}
-	if caller := e.Caller(); caller != "" {
+	if caller := e.Caller(); f.full || caller != "" {
 		kv[f.caller] = caller
-	} else {
-		if f.full {
-			kv[f.caller] = ""
-		}
 	}
 	// The json.Encoder.Encode method automatically adds line breaks.
 	return json.NewEncoder(b).Encode(kv)

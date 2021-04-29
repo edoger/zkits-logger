@@ -61,10 +61,39 @@ func TestJSONFormatter_Format(t *testing.T) {
 	l.SetOutput(buf)
 	l.SetDefaultTimeFormat("test")
 
-	l.Info("test")
+	l.WithField("foo", 1).Info("test")
 
 	got := buf.String()
-	want := `{"caller":"","fields":{},"level":"info","msg":"test","name":"test","time":"test"}` + "\n"
+	want := `{"caller":"","fields":{"foo":1},"level":"info","msg":"test","name":"test","time":"test"}` + "\n"
+	if got != want {
+		t.Fatalf("JSONFormatter.Format(): want %q, got %q", want, got)
+	}
+
+	buf.Reset()
+	l.Info("test")
+
+	got = buf.String()
+	want = `{"caller":"","fields":{},"level":"info","msg":"test","name":"test","time":"test"}` + "\n"
+	if got != want {
+		t.Fatalf("JSONFormatter.Format(): want %q, got %q", want, got)
+	}
+
+	l.SetFormatter(MustNewJSONFormatter(nil, true))
+
+	buf.Reset()
+	l.WithField("foo", 1).Info("test")
+
+	got = buf.String()
+	want = `{"caller":"","fields":{"foo":1},"level":"info","message":"test","name":"test","time":"test"}` + "\n"
+	if got != want {
+		t.Fatalf("JSONFormatter.Format(): want %q, got %q", want, got)
+	}
+
+	buf.Reset()
+	l.Info("test")
+
+	got = buf.String()
+	want = `{"caller":"","fields":{},"level":"info","message":"test","name":"test","time":"test"}` + "\n"
 	if got != want {
 		t.Fatalf("JSONFormatter.Format(): want %q, got %q", want, got)
 	}
