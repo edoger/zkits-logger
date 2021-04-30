@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/edoger/zkits-logger/internal"
 )
@@ -93,18 +94,44 @@ type jsonFormatterObject struct {
 	Time    string      `json:"time"`
 }
 
+// The internal temporary object pool of the json formatter.
+var jsonFormatterObjectPool = sync.Pool{
+	New: func() interface{} {
+		return new(jsonFormatterObject)
+	},
+}
+
+// Obtain a temporary object for the json formatter from the object pool.
+func getJSONFormatterObject() *jsonFormatterObject {
+	return jsonFormatterObjectPool.Get().(*jsonFormatterObject)
+}
+
+// Put the temporary object of the json formatter back into the object pool.
+func putJSONFormatterObject(o *jsonFormatterObject) {
+	o.Caller = nil
+	o.Fields = nil
+	o.Level = ""
+	o.Message = ""
+	o.Name = ""
+	o.Time = ""
+
+	jsonFormatterObjectPool.Put(o)
+}
+
 // Format formats the given log entity into character data and writes it to the given buffer.
 func (f *jsonFormatter) Format(e Entity, b *bytes.Buffer) error {
 	// In most cases, the performance of json serialization of structure is higher than
 	// that of json serialization of map. When the json field name has not changed, we
 	// try to use structure for json serialization.
 	if f.structure {
-		o := &jsonFormatterObject{
-			Level:   e.Level().String(),
-			Message: e.Message(),
-			Name:    e.Name(),
-			Time:    e.TimeString(),
-		}
+		o := getJSONFormatterObject()
+		defer putJSONFormatterObject(o)
+
+		o.Level = e.Level().String()
+		o.Message = e.Message()
+		o.Name = e.Name()
+		o.Time = e.TimeString()
+
 		if fields := e.Fields(); len(fields) > 0 {
 			o.Fields = internal.StandardiseFieldsForJSONEncoder(fields)
 		} else {
