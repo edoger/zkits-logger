@@ -40,7 +40,7 @@ func NewJSONFormatter(keys map[string]string, full bool) (Formatter, error) {
 		"fields": "fields", "caller": "caller",
 	}
 
-	changed := true
+	structure := true
 	if len(keys) > 0 {
 		for key, value := range keys {
 			if m[key] == "" {
@@ -48,7 +48,7 @@ func NewJSONFormatter(keys map[string]string, full bool) (Formatter, error) {
 			}
 			// We ignore the case where all fields are mapped as empty, which is more practical.
 			if value != "" && m[key] != value {
-				changed = false
+				structure = false
 				m[key] = value
 			}
 		}
@@ -56,7 +56,7 @@ func NewJSONFormatter(keys map[string]string, full bool) (Formatter, error) {
 	f := &jsonFormatter{
 		name: m["name"], time: m["time"], level: m["level"], message: m["message"],
 		fields: m["fields"], caller: m["caller"],
-		full: full, changed: changed,
+		full: full, structure: structure,
 	}
 	return f, nil
 }
@@ -72,14 +72,14 @@ func MustNewJSONFormatter(keys map[string]string, full bool) Formatter {
 
 // The built-in json formatter.
 type jsonFormatter struct {
-	name    string
-	time    string
-	level   string
-	message string
-	fields  string
-	caller  string
-	full    bool
-	changed bool
+	name      string
+	time      string
+	level     string
+	message   string
+	fields    string
+	caller    string
+	full      bool
+	structure bool
 }
 
 // Special built-in structure for json serialization.
@@ -98,7 +98,7 @@ func (f *jsonFormatter) Format(e Entity, b *bytes.Buffer) error {
 	// In most cases, the performance of json serialization of structure is higher than
 	// that of json serialization of map. When the json field name has not changed, we
 	// try to use structure for json serialization.
-	if f.changed {
+	if f.structure {
 		o := &jsonFormatterObject{
 			Level:   e.Level().String(),
 			Message: e.Message(),
@@ -115,9 +115,12 @@ func (f *jsonFormatter) Format(e Entity, b *bytes.Buffer) error {
 		if caller := e.Caller(); f.full || caller != "" {
 			o.Caller = &caller
 		}
+		// The json.Encoder.Encode method automatically adds line breaks.
 		return json.NewEncoder(b).Encode(o)
 	}
 
+	// When the json field cannot be predicted in advance, we use map to package the log data.
+	// Is there a better solution to improve the efficiency of json serialization?
 	kv := map[string]interface{}{
 		f.name:    e.Name(),
 		f.time:    e.TimeString(),
