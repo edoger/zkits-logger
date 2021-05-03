@@ -73,9 +73,8 @@ type fileWriter struct {
 // log data to a file.
 func (w *fileWriter) Write(b []byte) (n int, err error) {
 	w.mu.RLock()
-	fd := w.fd
+	n, err = w.fd.Write(b)
 	w.mu.RUnlock()
-	n, err = fd.Write(b)
 	if w.max != 0 && atomic.AddUint32(&w.size, uint32(n)) >= w.max {
 		w.swap()
 	}
@@ -89,6 +88,18 @@ func (w *fileWriter) swap() {
 	if atomic.LoadUint32(&w.size) < w.max {
 		return
 	}
+	// We need to make sure that the log file is written to disk before closing the file.
+	if err := w.fd.Sync(); err != nil {
+		internal.EchoError("Failed to sync log file %s: %s.", w.name, err)
+		return
+	}
+	if err := w.fd.Close(); err != nil {
+		// We need to ignore the error that the file is closed.
+		if e, ok := err.(*os.PathError); !ok || e.Err != os.ErrClosed {
+			internal.EchoError("Failed to close log file %s: %s.", w.name, err)
+			return
+		}
+	}
 	// We use a second-level date as the suffix name of the archive log,
 	// which may change in the future.
 	suffix := time.Now().Format("20060102150405")
@@ -101,16 +112,8 @@ func (w *fileWriter) swap() {
 		internal.EchoError("Failed to open log file %s: %s.", w.name, err)
 		return
 	}
-	old := w.fd
 	w.fd = fd
 	atomic.StoreUint32(&w.size, 0)
-
-	if err = old.Sync(); err != nil {
-		internal.EchoError("Failed to sync log file %s.%s: %s.", w.name, suffix, err)
-	}
-	if err = old.Close(); err != nil {
-		internal.EchoError("Failed to close log file %s.%s: %s.", w.name, suffix, err)
-	}
 }
 
 // Close is an implementation of the io.WriteCloser interface.
