@@ -16,13 +16,22 @@ package logger
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestNewFileWriter(t *testing.T) {
-	dir := t.TempDir()
+	dir, err := os.MkdirTemp("", "TestNewFileWriter.*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Fatal(err)
+		}
+	}()
 	name := filepath.Join(dir, "test.log")
 
 	if w, err := NewFileWriter(name, 1024); err != nil {
@@ -31,19 +40,32 @@ func TestNewFileWriter(t *testing.T) {
 		if w == nil {
 			t.Fatal("NewFileWriter(): nil")
 		}
+		if err = w.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}
-
 	if _, err := NewFileWriter(dir, 1024); err == nil {
 		t.Fatal("NewFileWriter(): nil error")
 	}
 }
 
 func TestMustNewFileWriter(t *testing.T) {
-	dir := t.TempDir()
+	dir, err := os.MkdirTemp("", "TestNewFileWriter.*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Fatal(err)
+		}
+	}()
 	name := filepath.Join(dir, "test.log")
-
 	if w := MustNewFileWriter(name, 1024); w == nil {
 		t.Fatal("MustNewFileWriter(): nil")
+	} else {
+		if err := w.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	defer func() {
@@ -55,7 +77,15 @@ func TestMustNewFileWriter(t *testing.T) {
 }
 
 func TestFileWriter(t *testing.T) {
-	dir := t.TempDir()
+	dir, err := os.MkdirTemp("", "TestNewFileWriter.*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Fatal(err)
+		}
+	}()
 	name := filepath.Join(dir, "test.log")
 	w := MustNewFileWriter(name, 1024)
 	defer func() {
