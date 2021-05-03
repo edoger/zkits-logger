@@ -18,13 +18,15 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNewFileWriter(t *testing.T) {
-	dir, err := os.MkdirTemp("", "TestNewFileWriter.*")
-	if err != nil {
+	dir := filepath.Join(os.TempDir(), strconv.FormatInt(time.Now().UnixNano(), 10), "TestNewFileWriter")
+	if err := os.MkdirAll(dir, 0766); err != nil {
 		t.Fatal(err)
 	}
 	defer func() {
@@ -50,8 +52,8 @@ func TestNewFileWriter(t *testing.T) {
 }
 
 func TestMustNewFileWriter(t *testing.T) {
-	dir, err := os.MkdirTemp("", "TestNewFileWriter.*")
-	if err != nil {
+	dir := filepath.Join(os.TempDir(), strconv.FormatInt(time.Now().UnixNano(), 10), "TestMustNewFileWriter")
+	if err := os.MkdirAll(dir, 0766); err != nil {
 		t.Fatal(err)
 	}
 	defer func() {
@@ -77,8 +79,8 @@ func TestMustNewFileWriter(t *testing.T) {
 }
 
 func TestFileWriter(t *testing.T) {
-	dir, err := os.MkdirTemp("", "TestNewFileWriter.*")
-	if err != nil {
+	dir := filepath.Join(os.TempDir(), strconv.FormatInt(time.Now().UnixNano(), 10), "TestFileWriter")
+	if err := os.MkdirAll(dir, 0766); err != nil {
 		t.Fatal(err)
 	}
 	defer func() {
