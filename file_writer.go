@@ -75,7 +75,7 @@ func (w *fileWriter) Write(b []byte) (n int, err error) {
 	w.mu.RLock()
 	n, err = w.fd.Write(b)
 	w.mu.RUnlock()
-	if w.max != 0 && atomic.AddUint32(&w.size, uint32(n)) >= w.max {
+	if n > 0 && w.max != 0 && atomic.AddUint32(&w.size, uint32(n)) >= w.max {
 		w.swap()
 	}
 	return
