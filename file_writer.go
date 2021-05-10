@@ -93,6 +93,7 @@ func (w *fileWriter) swap() {
 		internal.EchoError("Failed to sync log file %s: %s.", w.name, err)
 		return
 	}
+	// On the windows platform, the file must be closed before renaming the file.
 	if err := w.fd.Close(); err != nil {
 		// We need to ignore the error that the file is closed.
 		if e, ok := err.(*os.PathError); !ok || e.Err != os.ErrClosed {
