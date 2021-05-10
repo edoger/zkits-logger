@@ -12,7 +12,7 @@
 
 ## 简介 ##
 
-这个库是 ZKits 项目的一部分，我们在这里提供了一个完整的零依赖的JSON日志库，与日志标准库完全兼容。
+这个库是 ZKits 项目的一部分，它是一个完整的零依赖的 JSON 日志库。
 
 - 灵活可控的日志 Caller 报告，支持按日志级别报告。
 - 支持 7 种标准的日志级别。
@@ -29,22 +29,22 @@ go get -u -v github.com/edoger/zkits-logger
 
 ## 使用指南 ##
 
+### 快速开始 ###
+
 ```go
 package main
 
-import (
-    "github.com/edoger/zkits-logger"
-)
+import "github.com/edoger/zkits-logger"
 
 func main() {
     // 创建一个指定名称的日志记录器。
     log := logger.New("test")
 
-    // {"level":"info","message":"Something happened.","name":"test","time":"2020-02-20T20:20:20+08:00"}
-    log.Info("Something happened.")
+    // {"level":"info","message":"Hello.","name":"test","time":"2020-02-20T20:20:20+08:00"}
+    log.Info("Hello.")
 
-    // {"fields":{"num":1},"level":"info","message":"Something happened.","name":"test","time":"2020-02-20T20:20:20+08:00"}
-    log.WithField("num", 1).Info("Something happened.")
+    // {"fields":{"num":1},"level":"info","message":"Hello.","name":"test","time":"2020-02-20T20:20:20+08:00"}
+    log.WithField("num", 1).Info("Hello.")
 }
 ```
 
