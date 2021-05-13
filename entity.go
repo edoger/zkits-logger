@@ -65,6 +65,12 @@ type Summary interface {
 
 	// Size returns the log content size.
 	Size() int
+
+	// Clone returns a copy of the current log summary (excluding context).
+	Clone() Summary
+
+	// CloneWithContext returns a copy of the current log summary and sets its context to the given value.
+	CloneWithContext(context.Context) Summary
 }
 
 // The logEntity type is a built-in implementation of the Entity interface.
@@ -139,6 +145,43 @@ func (o *logEntity) String() string {
 // Size returns the log content size.
 func (o *logEntity) Size() int {
 	return o.buffer.Len()
+}
+
+// Clone returns a copy of the current log summary (excluding context).
+func (o *logEntity) Clone() Summary {
+	return o.CloneWithContext(nil)
+}
+
+// CloneWithContext returns a copy of the current log summary and sets its context to the given value.
+func (o *logEntity) CloneWithContext(ctx context.Context) Summary {
+	var buffer *bytes.Buffer
+	if bs := o.buffer.Bytes(); len(bs) > 0 {
+		cp := make([]byte, len(bs))
+		copy(cp, bs)
+		buffer = bytes.NewBuffer(cp)
+	} else {
+		buffer = new(bytes.Buffer)
+	}
+
+	var fields map[string]interface{}
+	if n := len(o.fields); n > 0 {
+		fields = make(map[string]interface{}, n)
+		for k, v := range o.fields {
+			fields[k] = v
+		}
+	}
+
+	return &logEntity{
+		name:       o.name,
+		time:       o.time,
+		timeFormat: o.timeFormat,
+		level:      o.level,
+		message:    o.message,
+		fields:     fields,
+		ctx:        ctx,
+		buffer:     *buffer,
+		caller:     o.caller,
+	}
 }
 
 // Read is the implementation of io.Reader interface.

@@ -16,6 +16,7 @@ package logger
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"testing"
@@ -69,11 +70,27 @@ func TestLogEntityAndSummary(t *testing.T) {
 	if got := o.Size(); got != 4 {
 		t.Fatalf("Summary.Size(): %d", got)
 	}
+
+	if o.Clone() == nil {
+		t.Fatalf("Summary.Clone(): nil")
+	}
+	if o.CloneWithContext(context.Background()) == nil {
+		t.Fatalf("Summary.CloneWithContext(): nil")
+	}
+
 	if got, err := ioutil.ReadAll(o); err == nil {
 		if !bytes.Equal(got, []byte("test")) {
 			t.Fatalf("Summary.Read(): %s", string(got))
 		}
 	} else {
 		t.Fatalf("Summary.Read(): %s", err)
+	}
+	// empty buffer
+	if o.Clone() == nil {
+		t.Fatalf("Summary.Clone(): nil")
+	}
+	// empty buffer
+	if o.CloneWithContext(context.Background()) == nil {
+		t.Fatalf("Summary.CloneWithContext(): nil")
 	}
 }
