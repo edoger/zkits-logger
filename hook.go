@@ -93,11 +93,13 @@ func (o *hookBag) Levels() []Level {
 
 // Fire receives the summary of the log and performs the full logic of the log hook.
 func (o *hookBag) Fire(s Summary) error {
-	if len(o.hooks) > 0 && len(o.hooks[s.Level()]) > 0 {
-		for _, hook := range o.hooks[s.Level()] {
-			if err := hook.Fire(s); err != nil {
-				return err
-			}
+	if len(o.hooks) == 0 || len(o.hooks[s.Level()]) == 0 {
+		return nil
+	}
+	hs := o.hooks[s.Level()]
+	for i, j := 0, len(hs); i < j; i++ {
+		if err := hs[i].Fire(s); err != nil {
+			return err
 		}
 	}
 	return nil
