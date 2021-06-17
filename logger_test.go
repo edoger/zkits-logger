@@ -79,7 +79,19 @@ func TestLogger_SetLevelOutput(t *testing.T) {
 		t.Fatal("Logger.SetLevelOutput(): nil")
 	}
 	if o.SetLevelOutput(InfoLevel, nil) == nil {
-		t.Fatal("Logger.SetLevelOutput(io.Writer, nil): nil")
+		t.Fatal("Logger.SetLevelOutput(Level, nil): nil")
+	}
+}
+
+func TestLogger_SetLevelsOutput(t *testing.T) {
+	o := New("test")
+	w := new(bytes.Buffer)
+
+	if o.SetLevelsOutput([]Level{InfoLevel, WarnLevel}, w) == nil {
+		t.Fatal("Logger.SetLevelsOutput(): nil")
+	}
+	if o.SetLevelsOutput([]Level{InfoLevel, WarnLevel}, nil) == nil {
+		t.Fatal("Logger.SetLevelsOutput(Level, nil): nil")
 	}
 }
 

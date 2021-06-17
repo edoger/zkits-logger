@@ -39,7 +39,12 @@ type Logger interface {
 	// SetLevelOutput sets the current logger level output writer.
 	// The level output writer is used to write log data of a given level.
 	// If the given writer is nil, the level writer will be disabled.
-	SetLevelOutput(level Level, w io.Writer) Logger
+	SetLevelOutput(Level, io.Writer) Logger
+
+	// SetLevelsOutput sets the current logger levels output writer.
+	// The level output writer is used to write log data of a given level.
+	// If the given writer is nil, the levels writer will be disabled.
+	SetLevelsOutput([]Level, io.Writer) Logger
 
 	// SetOutputInterceptor sets the output interceptor for the current logger.
 	// If the given interceptor is nil, the log data is written to the output writer.
@@ -74,6 +79,9 @@ type Logger interface {
 
 	// EnableLevelCaller enables caller reporting on logs of a given level.
 	EnableLevelCaller(Level, ...int) Logger
+
+	// EnableLevelsCaller enables caller reporting on logs of the given levels.
+	EnableLevelsCaller([]Level, ...int) Logger
 
 	// AddHook adds the given log hook to the current logger.
 	AddHook(Hook) Logger
@@ -120,6 +128,16 @@ func (o *logger) SetOutput(w io.Writer) Logger {
 // If the given writer is nil, the level writer will be disabled.
 func (o *logger) SetLevelOutput(level Level, w io.Writer) Logger {
 	o.core.levelWriter[level] = w
+	return o
+}
+
+// SetLevelsOutput sets the current logger levels output writer.
+// The level output writer is used to write log data of a given level.
+// If the given writer is nil, the levels writer will be disabled.
+func (o *logger) SetLevelsOutput(levels []Level, w io.Writer) Logger {
+	for i, j := 0, len(levels); i < j; i++ {
+		o.SetLevelOutput(levels[i], w)
+	}
 	return o
 }
 
@@ -206,6 +224,14 @@ func (o *logger) EnableLevelCaller(level Level, skip ...int) Logger {
 		n = skip[0]
 	}
 	o.core.levelCaller[level] = internal.NewCallerReporter(n)
+	return o
+}
+
+// EnableLevelsCaller enables caller reporting on logs of the given levels.
+func (o *logger) EnableLevelsCaller(levels []Level, skip ...int) Logger {
+	for i, j := 0, len(levels); i < j; i++ {
+		o.EnableLevelCaller(levels[i], skip...)
+	}
 	return o
 }
 

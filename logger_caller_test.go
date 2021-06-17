@@ -48,12 +48,12 @@ func TestLogger_EnableCaller(t *testing.T) {
 	}
 }
 
-func TestLogger_EnableLevelCaller(t *testing.T) {
+func TestLogger_EnableLevelsCaller(t *testing.T) {
 	w := new(bytes.Buffer)
 	o := New("test")
 	o.SetOutput(w)
 	o.SetLevel(TraceLevel)
-	o.EnableLevelCaller(DebugLevel)
+	o.EnableLevelsCaller([]Level{DebugLevel})
 	o.Debug("bar") // LINE 57
 	o.Info("foo")  // LINE 58
 
@@ -66,7 +66,7 @@ func TestLogger_EnableLevelCaller(t *testing.T) {
 	}
 
 	w.Reset()
-	o.EnableLevelCaller(DebugLevel, 1)
+	o.EnableLevelsCaller([]Level{DebugLevel}, 1)
 	testLogCaller(o) // LINE 70
 
 	got = w.String()
@@ -81,7 +81,7 @@ func TestLogger_WithCaller(t *testing.T) {
 	o.SetOutput(w)
 	o.SetLevel(TraceLevel)
 
-	o.WithCaller().Info("test")               // LINE 84
+	o.WithCaller().Info("test")                            // LINE 84
 	o.WithCaller(1).WithCaller().WithCaller().Info("test") // LINE 85
 
 	got := w.String()
