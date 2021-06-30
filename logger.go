@@ -88,6 +88,9 @@ type Logger interface {
 
 	// AddHookFunc adds the given log hook function to the current logger.
 	AddHookFunc([]Level, func(Summary) error) Logger
+
+	// AsLog converts current Logger to Log instances, which is unidirectional.
+	AsLog() Log
 }
 
 // New creates a new Logger instance.
@@ -244,4 +247,9 @@ func (o *logger) AddHook(hook Hook) Logger {
 // AddHookFunc adds the given log hook function to the current logger.
 func (o *logger) AddHookFunc(levels []Level, hook func(Summary) error) Logger {
 	return o.AddHook(NewHookFromFunc(levels, hook))
+}
+
+// AsLog converts current Logger to Log instances, which is unidirectional.
+func (o *logger) AsLog() Log {
+	return &o.log
 }
