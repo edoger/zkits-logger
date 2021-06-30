@@ -674,3 +674,14 @@ func TestLogger_Interceptor(t *testing.T) {
 		t.Fatalf("Logger.SetOutputInterceptor(): got %s", got)
 	}
 }
+
+func TestLogger_AsLog(t *testing.T) {
+	o := New("test")
+	l := o.AsLog()
+	if l == nil {
+		t.Fatal("Logger.AsLog(): nil")
+	}
+	if _, ok := l.(Logger); ok {
+		t.Fatal("Logger.AsLog(): Got Logger instance.")
+	}
+}
