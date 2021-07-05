@@ -3,6 +3,7 @@
 [English](README.md) | 简体中文
 
 [![ZKits](https://img.shields.io/badge/ZKits-Library-f3c)](https://github.com/edoger/zkits-logger)
+[![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 [![Build Status](https://travis-ci.com/edoger/zkits-logger.svg?branch=master)](https://travis-ci.com/edoger/zkits-logger)
 [![Build status](https://ci.appveyor.com/api/projects/status/xpbbppv3aui8n3fb/branch/master?svg=true)](https://ci.appveyor.com/project/edoger56924/zkits-logger/branch/master)
 [![Coverage Status](https://coveralls.io/repos/github/edoger/zkits-logger/badge.svg?branch=master)](https://coveralls.io/github/edoger/zkits-logger?branch=master)
@@ -12,7 +13,7 @@
 
 ## 简介 ##
 
-这个库是 ZKits 项目的一部分，它是一个完整的零依赖的 JSON 日志库。
+这个库是一个完整的零依赖的 JSON 日志库。
 
 - 灵活可控的日志 Caller 报告，支持按日志级别报告。
 - 支持 7 种标准的日志级别。
