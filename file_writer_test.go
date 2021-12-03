@@ -36,7 +36,7 @@ func TestNewFileWriter(t *testing.T) {
 	}()
 	name := filepath.Join(dir, "test.log")
 
-	if w, err := NewFileWriter(name, 1024); err != nil {
+	if w, err := NewFileWriter(name, 1024, 0); err != nil {
 		t.Fatal(err)
 	} else {
 		if w == nil {
@@ -46,7 +46,7 @@ func TestNewFileWriter(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := NewFileWriter(dir, 1024); err == nil {
+	if _, err := NewFileWriter(dir, 1024, 0); err == nil {
 		t.Fatal("NewFileWriter(): nil error")
 	}
 }
@@ -62,7 +62,7 @@ func TestMustNewFileWriter(t *testing.T) {
 		}
 	}()
 	name := filepath.Join(dir, "test.log")
-	if w := MustNewFileWriter(name, 1024); w == nil {
+	if w := MustNewFileWriter(name, 1024, 0); w == nil {
 		t.Fatal("MustNewFileWriter(): nil")
 	} else {
 		if err := w.Close(); err != nil {
@@ -75,7 +75,7 @@ func TestMustNewFileWriter(t *testing.T) {
 			t.Fatal("MustNewFileWriter(): not panic")
 		}
 	}()
-	MustNewFileWriter(dir, 1024)
+	MustNewFileWriter(dir, 1024, 0)
 }
 
 func TestFileWriter(t *testing.T) {
@@ -89,7 +89,7 @@ func TestFileWriter(t *testing.T) {
 		}
 	}()
 	name := filepath.Join(dir, "test.log")
-	w := MustNewFileWriter(name, 1024)
+	w := MustNewFileWriter(name, 1024, 0)
 	defer func() {
 		if err := w.Close(); err != nil {
 			t.Fatal(err)
@@ -116,6 +116,47 @@ func TestFileWriter(t *testing.T) {
 		}
 		if string(got) != data {
 			t.Fatalf("FileWriter.Write(): got %s", string(got))
+		}
+	}
+}
+
+func TestFileWriterWithBackup(t *testing.T) {
+	dir := filepath.Join(os.TempDir(), strconv.FormatInt(time.Now().UnixNano(), 10), "TestFileWriterWithBackup")
+	if err := os.MkdirAll(dir, 0766); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Fatal(err)
+		}
+	}()
+	name := filepath.Join(dir, "test.log")
+	w := MustNewFileWriter(name, 1000, 2)
+	defer func() {
+		if err := w.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}()
+	data := strings.Repeat("1", 1024)
+	for i := 0; i < 3; i++ {
+		if n, err := w.Write([]byte(data)); err != nil {
+			t.Fatal(err)
+		} else {
+			if n != 1024 {
+				t.Fatalf("FileWriter.Write(): %d", n)
+			}
+		}
+	}
+	// The file system takes some time.
+	time.Sleep(time.Second)
+	if matches, err := filepath.Glob(name + ".*"); err != nil {
+		t.Fatal(err)
+	} else {
+		if len(matches) == 0 {
+			t.Fatal("FileWriter.Write(): not rename")
+		}
+		if len(matches) != 2 {
+			t.Fatalf("FileWriter.Write(): not clean up: %v", matches)
 		}
 	}
 }
