@@ -90,7 +90,7 @@ type jsonFormatterObject struct {
 	Fields  interface{} `json:"fields,omitempty"` // map[string]interface{} or struct{}
 	Level   string      `json:"level"`
 	Message string      `json:"message"`
-	Name    string      `json:"name"`
+	Name    string      `json:"name,omitempty"`
 	Time    string      `json:"time"`
 }
 
