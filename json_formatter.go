@@ -38,7 +38,7 @@ func DefaultJSONFormatter() Formatter {
 func NewJSONFormatter(keys map[string]string, full bool) (Formatter, error) {
 	m := map[string]string{
 		"name": "name", "time": "time", "level": "level", "message": "message",
-		"fields": "fields", "caller": "caller",
+		"fields": "fields", "caller": "caller", "stack": "stack",
 	}
 
 	structure := true
@@ -56,7 +56,7 @@ func NewJSONFormatter(keys map[string]string, full bool) (Formatter, error) {
 	}
 	f := &jsonFormatter{
 		name: m["name"], time: m["time"], level: m["level"], message: m["message"],
-		fields: m["fields"], caller: m["caller"],
+		fields: m["fields"], caller: m["caller"], stack: m["stack"],
 		full: full, structure: structure,
 	}
 	return f, nil
@@ -79,6 +79,7 @@ type jsonFormatter struct {
 	message   string
 	fields    string
 	caller    string
+	stack     string
 	full      bool
 	structure bool
 }
@@ -91,7 +92,8 @@ type jsonFormatterObject struct {
 	Level   string      `json:"level"`
 	Message string      `json:"message"`
 	Name    string      `json:"name,omitempty"`
-	Time    string      `json:"time"`
+	Stack   []string    `json:"stack,omitempty"`
+	Time    *string     `json:"time,omitempty"`
 }
 
 // The internal temporary object pool of the json formatter.
@@ -113,7 +115,8 @@ func putJSONFormatterObject(o *jsonFormatterObject) {
 	o.Level = ""
 	o.Message = ""
 	o.Name = ""
-	o.Time = ""
+	o.Stack = nil
+	o.Time = nil
 
 	jsonFormatterObjectPool.Put(o)
 }
@@ -130,8 +133,9 @@ func (f *jsonFormatter) Format(e Entity, b *bytes.Buffer) error {
 		o.Level = e.Level().String()
 		o.Message = e.Message()
 		o.Name = e.Name()
-		o.Time = e.TimeString()
-
+		if tm := e.TimeString(); f.full || tm != "" {
+			o.Time = &tm
+		}
 		if fields := e.Fields(); len(fields) > 0 {
 			o.Fields = internal.StandardiseFieldsForJSONEncoder(fields)
 		} else {
@@ -142,6 +146,13 @@ func (f *jsonFormatter) Format(e Entity, b *bytes.Buffer) error {
 		if caller := e.Caller(); f.full || caller != "" {
 			o.Caller = &caller
 		}
+		if stack := e.Stack(); len(stack) > 0 {
+			o.Stack = stack
+		} else {
+			if f.full {
+				o.Stack = []string{}
+			}
+		}
 		// The json.Encoder.Encode method automatically adds line breaks.
 		return json.NewEncoder(b).Encode(o)
 	}
@@ -149,10 +160,14 @@ func (f *jsonFormatter) Format(e Entity, b *bytes.Buffer) error {
 	// When the json field cannot be predicted in advance, we use map to package the log data.
 	// Is there a better solution to improve the efficiency of json serialization?
 	kv := map[string]interface{}{
-		f.name:    e.Name(),
-		f.time:    e.TimeString(),
 		f.level:   e.Level().String(),
 		f.message: e.Message(),
+	}
+	if name := e.Name(); f.full || name != "" {
+		kv[f.name] = name
+	}
+	if tm := e.TimeString(); f.full || tm != "" {
+		kv[f.time] = tm
 	}
 	if fields := e.Fields(); len(fields) > 0 {
 		kv[f.fields] = internal.StandardiseFieldsForJSONEncoder(fields)
@@ -163,6 +178,13 @@ func (f *jsonFormatter) Format(e Entity, b *bytes.Buffer) error {
 	}
 	if caller := e.Caller(); f.full || caller != "" {
 		kv[f.caller] = caller
+	}
+	if stack := e.Stack(); len(stack) > 0 {
+		kv[f.stack] = stack
+	} else {
+		if f.full {
+			kv[f.stack] = []string{}
+		}
 	}
 	// The json.Encoder.Encode method automatically adds line breaks.
 	return json.NewEncoder(b).Encode(kv)

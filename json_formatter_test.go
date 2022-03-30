@@ -16,6 +16,7 @@ package logger
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 )
 
@@ -64,7 +65,7 @@ func TestJSONFormatter_Format(t *testing.T) {
 	l.WithField("foo", 1).Info("test")
 
 	got := buf.String()
-	want := `{"caller":"","fields":{"foo":1},"level":"info","msg":"test","name":"test","time":"test"}` + "\n"
+	want := `{"caller":"","fields":{"foo":1},"level":"info","msg":"test","name":"test","stack":[],"time":"test"}` + "\n"
 	if got != want {
 		t.Fatalf("JSONFormatter.Format(): want %q, got %q", want, got)
 	}
@@ -73,7 +74,7 @@ func TestJSONFormatter_Format(t *testing.T) {
 	l.Info("test")
 
 	got = buf.String()
-	want = `{"caller":"","fields":{},"level":"info","msg":"test","name":"test","time":"test"}` + "\n"
+	want = `{"caller":"","fields":{},"level":"info","msg":"test","name":"test","stack":[],"time":"test"}` + "\n"
 	if got != want {
 		t.Fatalf("JSONFormatter.Format(): want %q, got %q", want, got)
 	}
@@ -96,5 +97,25 @@ func TestJSONFormatter_Format(t *testing.T) {
 	want = `{"caller":"","fields":{},"level":"info","message":"test","name":"test","time":"test"}` + "\n"
 	if got != want {
 		t.Fatalf("JSONFormatter.Format(): want %q, got %q", want, got)
+	}
+}
+
+func TestJSONFormatter_Format_WithStack(t *testing.T) {
+	l := New("test")
+	l.SetFormatter(DefaultJSONFormatter())
+	buf := new(bytes.Buffer)
+	l.SetOutput(buf)
+	l.SetDefaultTimeFormat("")
+
+	l.WithStack().Info("test")
+	if !strings.Contains(buf.String(), "TestJSONFormatter_Format_WithStack") {
+		t.Fatalf("JSONFormatter.Format(): %s", buf.String())
+	}
+
+	buf.Reset()
+	l.SetFormatter(MustNewJSONFormatter(map[string]string{"message": "msg"}, true))
+	l.WithStack().Info("test")
+	if !strings.Contains(buf.String(), "TestJSONFormatter_Format_WithStack") {
+		t.Fatalf("JSONFormatter.Format(): %s", buf.String())
 	}
 }
