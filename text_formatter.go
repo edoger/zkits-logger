@@ -25,13 +25,13 @@ import (
 )
 
 // This regular expression is used to analyze placeholders in text formatter format.
-var formatRegexp = regexp.MustCompile(`{(name|time|level|message|caller|fields)(?:@?([^{}]*)?)?}`)
+var formatRegexp = regexp.MustCompile(`{(name|time|level|message|caller|stack|fields)(?:@?([^{}]*)?)?}`)
 
 // The default text formatter.
-var defaultTextFormatter = MustNewTextFormatter("{name}:[{time}][{level@sc}] {message}{caller}{fields}", false)
+var defaultTextFormatter = MustNewTextFormatter("{name}:[{time}][{level@sc}] {message}{caller}{fields}{stack}", false)
 
 // The default quote text formatter.
-var defaultQuoteTextFormatter = MustNewTextFormatter("{name}:[{time}][{level@sc}] {message}{caller}{fields}", true)
+var defaultQuoteTextFormatter = MustNewTextFormatter("{name}:[{time}][{level@sc}] {message}{caller}{fields}{stack}", true)
 
 // DefaultTextFormatter returns the default text formatter.
 func DefaultTextFormatter() Formatter {
@@ -72,7 +72,7 @@ func NewTextFormatter(format string, quote bool) (Formatter, error) {
 	}
 	// If sub is not empty, then idx is definitely not empty.
 	idx := formatRegexp.FindAllStringIndex(format, -1)
-	f := &textFormatter{quote: quote, callerPrefix: " ", fieldsPrefix: " "}
+	f := &textFormatter{quote: quote, callerPrefix: " ", fieldsPrefix: " ", stackPrefix: " "}
 
 	var parts []string
 	var start int
@@ -111,6 +111,11 @@ func NewTextFormatter(format string, quote bool) (Formatter, error) {
 			if args == "?" {
 				f.fieldsPrefix = ""
 			}
+		case "stack":
+			f.encoders = append(f.encoders, f.encodeStack)
+			if args == "?" {
+				f.stackPrefix = ""
+			}
 		}
 		parts = append(parts, format[start:idx[i][0]])
 		start = idx[i][1]
@@ -137,6 +142,7 @@ type textFormatter struct {
 	timeFormat   string
 	callerPrefix string
 	fieldsPrefix string
+	stackPrefix  string
 }
 
 // Format formats the given log entity into character data and writes it to the given buffer.
@@ -208,6 +214,14 @@ func (f *textFormatter) encodeMessage(e Entity) string {
 func (f *textFormatter) encodeFields(e Entity) string {
 	if fields := e.Fields(); len(fields) > 0 {
 		return f.fieldsPrefix + internal.FormatFieldsToText(e.Fields())
+	}
+	return ""
+}
+
+// Encode the stack of the log.
+func (f *textFormatter) encodeStack(e Entity) string {
+	if stack := e.Stack(); len(stack) > 0 {
+		return f.stackPrefix + strings.Join(stack, "; ")
 	}
 	return ""
 }

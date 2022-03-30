@@ -16,6 +16,7 @@ package logger
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 )
 
@@ -124,5 +125,16 @@ func TestTextFormatter_Format(t *testing.T) {
 	want = "test - test [info]  test \n"
 	if got != want {
 		t.Fatalf("TextFormatter.Format(): want %q, got %q", want, got)
+	}
+}
+
+func TestTextFormatter_Format_WithStack(t *testing.T) {
+	l := New("test")
+	l.SetFormatter(MustNewTextFormatter("{name} - {time} [{level}] {caller@?} {message}  {fields@?} {stack@?}", true))
+	buf := new(bytes.Buffer)
+	l.SetOutput(buf)
+	l.WithStack().Info("test")
+	if !strings.Contains(buf.String(), "TestTextFormatter_Format_WithStack") {
+		t.Fatalf("TextFormatter.Format(): %s", buf.String())
 	}
 }
