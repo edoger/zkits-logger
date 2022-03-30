@@ -33,6 +33,7 @@ func TestLogEntityAndSummary(t *testing.T) {
 		message:    "foo",
 		fields:     map[string]interface{}{"key": "foo"},
 		caller:     "foo.go:1",
+		stack:      []string{"stack"},
 	}
 
 	o.(*logEntity).buffer.WriteString("test")
@@ -46,6 +47,12 @@ func TestLogEntityAndSummary(t *testing.T) {
 	if got := o.TimeString(); got != now.Format(time.RFC3339) {
 		t.Fatalf("Summary.TimeString(): %s", got)
 	}
+	// empty time string
+	o.(*logEntity).timeFormat = ""
+	if got := o.TimeString(); got != "" {
+		t.Fatalf("Summary.TimeString(): %s", got)
+	}
+
 	if got := o.Level(); got != InfoLevel {
 		t.Fatalf("Summary.Level(): %s", got.String())
 	}
@@ -60,6 +67,9 @@ func TestLogEntityAndSummary(t *testing.T) {
 	}
 	if got := o.Caller(); got != "foo.go:1" {
 		t.Fatalf("Summary.Caller(): %s", got)
+	}
+	if got := o.Stack(); len(got) != 1 || got[0] != "stack" {
+		t.Fatalf("Summary.Stack(): %s", got)
 	}
 	if got := o.Bytes(); !bytes.Equal(got, []byte("test")) {
 		t.Fatalf("Summary.Bytes(): %s", string(got))

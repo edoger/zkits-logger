@@ -47,6 +47,9 @@ type Log interface {
 	// WithCaller forces the caller report of the current log to be enabled.
 	WithCaller(...int) Log
 
+	// WithStack adds call stack information to the current log.
+	WithStack() Log
+
 	// Log uses the given parameters to record a log of the specified level.
 	// If the given log level is PanicLevel, the given panic function will be
 	// called automatically after logging is completed.
@@ -243,6 +246,7 @@ func (c *core) putEntity(o *logEntity) {
 	o.fields = nil
 	o.ctx = nil
 	o.caller = ""
+	o.stack = nil
 
 	c.pool.Put(o)
 }
@@ -253,6 +257,7 @@ type log struct {
 	ctx    context.Context
 	fields internal.Fields
 	caller *internal.CallerReporter
+	stack  bool
 }
 
 // Name returns the logger name.
@@ -263,9 +268,9 @@ func (o *log) Name() string {
 // WithField adds the given extended data to the log.
 func (o *log) WithField(key string, value interface{}) Log {
 	if len(o.fields) == 0 {
-		return &log{core: o.core, fields: internal.Fields{key: value}, ctx: o.ctx, caller: o.caller}
+		return &log{core: o.core, fields: internal.Fields{key: value}, ctx: o.ctx, caller: o.caller, stack: o.stack}
 	}
-	r := &log{core: o.core, fields: o.fields.Clone(1), ctx: o.ctx, caller: o.caller}
+	r := &log{core: o.core, fields: o.fields.Clone(1), ctx: o.ctx, caller: o.caller, stack: o.stack}
 	r.fields[key] = value
 	return r
 }
@@ -279,14 +284,14 @@ func (o *log) WithError(err error) Log {
 // WithFields adds the given multiple extended data to the log.
 func (o *log) WithFields(fields map[string]interface{}) Log {
 	if len(o.fields) == 0 {
-		return &log{core: o.core, fields: internal.MakeFields(fields), ctx: o.ctx, caller: o.caller}
+		return &log{core: o.core, fields: internal.MakeFields(fields), ctx: o.ctx, caller: o.caller, stack: o.stack}
 	}
-	return &log{core: o.core, fields: o.fields.With(fields), ctx: o.ctx, caller: o.caller}
+	return &log{core: o.core, fields: o.fields.With(fields), ctx: o.ctx, caller: o.caller, stack: o.stack}
 }
 
 // WithContext adds the given context to the log.
 func (o *log) WithContext(ctx context.Context) Log {
-	return &log{core: o.core, fields: o.fields, ctx: ctx, caller: o.caller}
+	return &log{core: o.core, fields: o.fields, ctx: ctx, caller: o.caller, stack: o.stack}
 }
 
 // WithCaller forces the caller report of the current log to be enabled.
@@ -299,13 +304,25 @@ func (o *log) WithCaller(skip ...int) Log {
 	if o.caller != nil && o.caller.Equal(n) {
 		return o
 	}
-	return &log{core: o.core, fields: o.fields, ctx: o.ctx, caller: internal.NewCallerReporter(n)}
+	return &log{core: o.core, fields: o.fields, ctx: o.ctx, caller: internal.NewCallerReporter(n), stack: o.stack}
+}
+
+// WithStack adds call stack information to the current log.
+func (o *log) WithStack() Log {
+	if o.stack {
+		return o
+	}
+	return &log{core: o.core, fields: o.fields, ctx: o.ctx, caller: o.caller, stack: true}
 }
 
 // Format and record the current log.
 func (o *log) record(level Level, message string) {
 	entity := o.core.getEntity(o, level, message, o.getCaller(level))
 	defer o.core.putEntity(entity)
+
+	if o.stack {
+		entity.stack = internal.GetStack()
+	}
 
 	if err := o.core.formatter.Format(entity, &entity.buffer); err != nil {
 		// When the format log fails, we terminate the logging and report the error.

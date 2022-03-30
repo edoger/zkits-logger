@@ -47,6 +47,10 @@ type Entity interface {
 	// Caller returns the log caller.
 	// If it is not enabled, an empty string is always returned.
 	Caller() string
+
+	// Stack returns the call stack information at the logging location.
+	// Returns nil if not enabled.
+	Stack() []string
 }
 
 // Summary interface defines the summary of the log.
@@ -84,6 +88,7 @@ type logEntity struct {
 	ctx        context.Context
 	buffer     bytes.Buffer
 	caller     string
+	stack      []string
 }
 
 // Name returns the logger name.
@@ -98,6 +103,9 @@ func (o *logEntity) Time() time.Time {
 
 // TimeString returns the log time string formatted with the default time format.
 func (o *logEntity) TimeString() string {
+	if o.timeFormat == "" {
+		return ""
+	}
 	return o.time.Format(o.timeFormat)
 }
 
@@ -128,6 +136,12 @@ func (o *logEntity) Context() context.Context {
 // If it is not enabled, an empty string is always returned.
 func (o *logEntity) Caller() string {
 	return o.caller
+}
+
+// Stack returns the call stack information at the logging location.
+// Returns nil if not enabled.
+func (o *logEntity) Stack() []string {
+	return o.stack
 }
 
 // Bytes returns the log content bytes.
@@ -171,6 +185,12 @@ func (o *logEntity) CloneWithContext(ctx context.Context) Summary {
 		}
 	}
 
+	var stack []string
+	if o.stack != nil {
+		stack = make([]string, len(o.stack))
+		copy(stack, o.stack)
+	}
+
 	return &logEntity{
 		name:       o.name,
 		time:       o.time,
@@ -181,6 +201,7 @@ func (o *logEntity) CloneWithContext(ctx context.Context) Summary {
 		ctx:        ctx,
 		buffer:     *buffer,
 		caller:     o.caller,
+		stack:      stack,
 	}
 }
 
