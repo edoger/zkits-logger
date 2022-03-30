@@ -33,10 +33,11 @@ type consoleFormatter struct{}
 
 // Format formats the given log entity into character data and writes it to the given buffer.
 func (f *consoleFormatter) Format(e Entity, b *bytes.Buffer) (err error) {
-	if name := e.Name(); name == "" {
-		b.WriteString("[" + e.TimeString() + "]")
-	} else {
-		b.WriteString(name + " [" + e.TimeString() + "]")
+	if name := e.Name(); name != "" {
+		b.WriteString(name + " ")
+	}
+	if tm := e.TimeString(); tm != "" {
+		b.WriteString("[" + tm + "]")
 	}
 	switch e.Level() {
 	case TraceLevel:
@@ -62,6 +63,13 @@ func (f *consoleFormatter) Format(e Entity, b *bytes.Buffer) (err error) {
 	}
 	if fields := e.Fields(); len(fields) > 0 {
 		b.WriteString(" " + internal.FormatFieldsToText(e.Fields()))
+	}
+	if stack := e.Stack(); len(stack) > 0 {
+		// In the console, in order to be able to display the stack information better,
+		// we will use a separate line to display the stack information.
+		for i, j := 0, len(stack); i < j; i++ {
+			b.WriteString("\n\t" + stack[i])
+		}
 	}
 	b.WriteByte('\n')
 	return

@@ -73,3 +73,16 @@ func TestConsoleFormatter_Format_WithoutName(t *testing.T) {
 		t.Fatalf("NewConsoleFormatter().Format(): %s", strconv.Quote(buf.String()))
 	}
 }
+
+func TestConsoleFormatter_Format_WithStack(t *testing.T) {
+	l := New("")
+	l.SetFormatter(NewConsoleFormatter())
+	l.SetDefaultTimeFormat("")
+	buf := new(bytes.Buffer)
+	l.SetOutput(buf)
+	l.WithStack().Info("test")
+	fmt.Println(buf.String())
+	if !strings.Contains(buf.String(), "TestConsoleFormatter_Format_WithStack") {
+		t.Fatalf("ConsoleFormatter().Format(): %s", strconv.Quote(buf.String()))
+	}
+}
