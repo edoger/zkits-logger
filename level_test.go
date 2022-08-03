@@ -40,6 +40,28 @@ func TestLevel_String(t *testing.T) {
 	}
 }
 
+func TestLevel_ColorfulString(t *testing.T) {
+	items := []struct {
+		Given Level
+		Want  string
+	}{
+		{PanicLevel, "\u001B[91mpanic\u001B[0m"},
+		{FatalLevel, "\u001B[31mfatal\u001B[0m"},
+		{ErrorLevel, "\u001B[95merror\u001B[0m"},
+		{WarnLevel, "\u001B[93mwarn\u001B[0m"},
+		{InfoLevel, "\u001B[92minfo\u001B[0m"},
+		{DebugLevel, "\u001B[96mdebug\u001B[0m"},
+		{TraceLevel, "\u001B[36mtrace\u001B[0m"},
+		{Level(0), "unknown"},
+	}
+
+	for _, item := range items {
+		if got := item.Given.ColorfulString(); got != item.Want {
+			t.Fatalf("Level.ColorfulString(): want %v, got %v", item.Want, got)
+		}
+	}
+}
+
 func TestLevel_CapitalString(t *testing.T) {
 	items := []struct {
 		Given Level
@@ -58,6 +80,28 @@ func TestLevel_CapitalString(t *testing.T) {
 	for _, item := range items {
 		if got := item.Given.CapitalString(); got != item.Want {
 			t.Fatalf("Level.CapitalString(): want %v, got %v", item.Want, got)
+		}
+	}
+}
+
+func TestLevel_ColorfulCapitalString(t *testing.T) {
+	items := []struct {
+		Given Level
+		Want  string
+	}{
+		{PanicLevel, "\u001B[91mPANIC\u001B[0m"},
+		{FatalLevel, "\u001B[31mFATAL\u001B[0m"},
+		{ErrorLevel, "\u001B[95mERROR\u001B[0m"},
+		{WarnLevel, "\u001B[93mWARN\u001B[0m"},
+		{InfoLevel, "\u001B[92mINFO\u001B[0m"},
+		{DebugLevel, "\u001B[96mDEBUG\u001B[0m"},
+		{TraceLevel, "\u001B[36mTRACE\u001B[0m"},
+		{Level(0), "UNKNOWN"},
+	}
+
+	for _, item := range items {
+		if got := item.Given.ColorfulCapitalString(); got != item.Want {
+			t.Fatalf("Level.ColorfulCapitalString(): want %v, got %v", item.Want, got)
 		}
 	}
 }
@@ -84,6 +128,28 @@ func TestLevel_ShortString(t *testing.T) {
 	}
 }
 
+func TestLevel_ColorfulShortString(t *testing.T) {
+	items := []struct {
+		Given Level
+		Want  string
+	}{
+		{PanicLevel, "\u001B[91mpnc\u001B[0m"},
+		{FatalLevel, "\u001B[31mfat\u001B[0m"},
+		{ErrorLevel, "\u001B[95merr\u001B[0m"},
+		{WarnLevel, "\u001B[93mwan\u001B[0m"},
+		{InfoLevel, "\u001B[92minf\u001B[0m"},
+		{DebugLevel, "\u001B[96mdbg\u001B[0m"},
+		{TraceLevel, "\u001B[36mtac\u001B[0m"},
+		{Level(0), "uno"},
+	}
+
+	for _, item := range items {
+		if got := item.Given.ColorfulShortString(); got != item.Want {
+			t.Fatalf("Level.ColorfulShortString(): want %v, got %v", item.Want, got)
+		}
+	}
+}
+
 func TestLevel_ShortCapitalString(t *testing.T) {
 	items := []struct {
 		Given Level
@@ -102,6 +168,28 @@ func TestLevel_ShortCapitalString(t *testing.T) {
 	for _, item := range items {
 		if got := item.Given.ShortCapitalString(); got != item.Want {
 			t.Fatalf("Level.ShortCapitalString(): want %v, got %v", item.Want, got)
+		}
+	}
+}
+
+func TestLevel_ColorfulShortCapitalString(t *testing.T) {
+	items := []struct {
+		Given Level
+		Want  string
+	}{
+		{PanicLevel, "\u001B[91mPNC\u001B[0m"},
+		{FatalLevel, "\u001B[31mFAT\u001B[0m"},
+		{ErrorLevel, "\u001B[95mERR\u001B[0m"},
+		{WarnLevel, "\u001B[93mWAN\u001B[0m"},
+		{InfoLevel, "\u001B[92mINF\u001B[0m"},
+		{DebugLevel, "\u001B[96mDBG\u001B[0m"},
+		{TraceLevel, "\u001B[36mTAC\u001B[0m"},
+		{Level(0), "UNO"},
+	}
+
+	for _, item := range items {
+		if got := item.Given.ColorfulShortCapitalString(); got != item.Want {
+			t.Fatalf("Level.ColorfulShortCapitalString(): want %v, got %v", item.Want, got)
 		}
 	}
 }

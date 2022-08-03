@@ -39,24 +39,7 @@ func (f *consoleFormatter) Format(e Entity, b *bytes.Buffer) (err error) {
 	if tm := e.TimeString(); tm != "" {
 		b.WriteString("[" + tm + "]")
 	}
-	switch e.Level() {
-	case TraceLevel:
-		b.WriteString("[\u001B[36m" + e.Level().ShortCapitalString() + "\u001B[0m] ") // cyan
-	case DebugLevel:
-		b.WriteString("[\u001B[96m" + e.Level().ShortCapitalString() + "\u001B[0m] ") // hi-intensity cyan
-	case InfoLevel:
-		b.WriteString("[\u001B[92m" + e.Level().ShortCapitalString() + "\u001B[0m] ") // hi-intensity green
-	case WarnLevel:
-		b.WriteString("[\u001B[93m" + e.Level().ShortCapitalString() + "\u001B[0m] ") // hi-intensity yellow
-	case ErrorLevel:
-		b.WriteString("[\u001B[95m" + e.Level().ShortCapitalString() + "\u001B[0m] ") // hi-intensity red
-	case FatalLevel:
-		b.WriteString("[\u001B[31m" + e.Level().ShortCapitalString() + "\u001B[0m] ") // magenta
-	case PanicLevel:
-		b.WriteString("[\u001B[91m" + e.Level().ShortCapitalString() + "\u001B[0m] ") // hi-intensity magenta
-	default:
-		b.WriteString("[" + e.Level().ShortCapitalString() + "] ") // no color
-	}
+	b.WriteString("[" + e.Level().ColorfulShortCapitalString() + "] ")
 	b.WriteString(e.Message())
 	if caller := e.Caller(); caller != "" {
 		b.WriteString(" " + caller)

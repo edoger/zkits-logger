@@ -17,6 +17,8 @@ package logger
 import (
 	"fmt"
 	"strings"
+
+	"github.com/edoger/zkits-logger/internal"
 )
 
 const (
@@ -51,13 +53,13 @@ type Level uint32
 
 // All supported log levels.
 var allLevels = map[Level][]string{
-	PanicLevel: {"panic", "PANIC", "pnc", "PNC"},
-	FatalLevel: {"fatal", "FATAL", "fat", "FAT"},
-	ErrorLevel: {"error", "ERROR", "err", "ERR"},
-	WarnLevel:  {"warn", "WARN", "wan", "WAN"},
-	InfoLevel:  {"info", "INFO", "inf", "INF"},
-	DebugLevel: {"debug", "DEBUG", "dbg", "DBG"},
-	TraceLevel: {"trace", "TRACE", "tac", "TAC"},
+	PanicLevel: internal.Colorful(internal.PNC, []string{"panic", "PANIC", "pnc", "PNC"}),
+	FatalLevel: internal.Colorful(internal.FAT, []string{"fatal", "FATAL", "fat", "FAT"}),
+	ErrorLevel: internal.Colorful(internal.ERR, []string{"error", "ERROR", "err", "ERR"}),
+	WarnLevel:  internal.Colorful(internal.WAN, []string{"warn", "WARN", "wan", "WAN"}),
+	InfoLevel:  internal.Colorful(internal.INF, []string{"info", "INFO", "inf", "INF"}),
+	DebugLevel: internal.Colorful(internal.DBG, []string{"debug", "DEBUG", "dbg", "DBG"}),
+	TraceLevel: internal.Colorful(internal.TAC, []string{"trace", "TRACE", "tac", "TAC"}),
 }
 
 // String returns the string form of the current level.
@@ -65,6 +67,15 @@ var allLevels = map[Level][]string{
 func (level Level) String() string {
 	if s, found := allLevels[level]; found {
 		return s[0]
+	}
+	return "unknown"
+}
+
+// ColorfulString returns the colorful string form of the current level.
+// If the log level is not supported, always returns "unknown".
+func (level Level) ColorfulString() string {
+	if s, found := allLevels[level]; found {
+		return s[4]
 	}
 	return "unknown"
 }
@@ -78,6 +89,15 @@ func (level Level) CapitalString() string {
 	return "UNKNOWN"
 }
 
+// ColorfulCapitalString returns the colorful capital string form of the current level.
+// If the log level is not supported, always returns "UNKNOWN".
+func (level Level) ColorfulCapitalString() string {
+	if s, found := allLevels[level]; found {
+		return s[5]
+	}
+	return "UNKNOWN"
+}
+
 // ShortString returns the short string form of the current level.
 // If the log level is not supported, always returns "uno".
 func (level Level) ShortString() string {
@@ -87,11 +107,29 @@ func (level Level) ShortString() string {
 	return "uno"
 }
 
+// ColorfulShortString returns the colorful short string form of the current level.
+// If the log level is not supported, always returns "uno".
+func (level Level) ColorfulShortString() string {
+	if s, found := allLevels[level]; found {
+		return s[6]
+	}
+	return "uno"
+}
+
 // ShortCapitalString returns the short capital string form of the current level.
 // If the log level is not supported, always returns "UNO".
 func (level Level) ShortCapitalString() string {
 	if s, found := allLevels[level]; found {
 		return s[3]
+	}
+	return "UNO"
+}
+
+// ColorfulShortCapitalString returns the colorful short capital string form of the current level.
+// If the log level is not supported, always returns "UNO".
+func (level Level) ColorfulShortCapitalString() string {
+	if s, found := allLevels[level]; found {
+		return s[7]
 	}
 	return "UNO"
 }
