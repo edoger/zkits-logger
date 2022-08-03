@@ -479,6 +479,24 @@ func TestLogger_WithField(t *testing.T) {
 	}
 }
 
+func TestLogger_WithMessagePrefix(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+
+	o.SetFormatter(FormatterFunc(func(e Entity, b *bytes.Buffer) error {
+		b.WriteString(e.Message())
+		return nil
+	}))
+
+	o.WithMessagePrefix("Prefix: ").Trace("foo")
+	want := "Prefix: foo"
+	if got := w.String(); got != want {
+		t.Fatalf("WithMessagePrefix: got %q, want %q", got, want)
+	}
+}
+
 func TestLogger_WithError(t *testing.T) {
 	w := new(bytes.Buffer)
 	o := New("test")

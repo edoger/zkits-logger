@@ -31,6 +31,9 @@ type Log interface {
 	// Name returns the logger name.
 	Name() string
 
+	// WithMessagePrefix adds a fixed message prefix to the current log.
+	WithMessagePrefix(string) Log
+
 	// WithField adds the given extended data to the log.
 	WithField(string, interface{}) Log
 
@@ -257,6 +260,7 @@ type log struct {
 	ctx    context.Context
 	fields internal.Fields
 	caller *internal.CallerReporter
+	prefix string
 	stack  bool
 }
 
@@ -265,12 +269,29 @@ func (o *log) Name() string {
 	return o.core.name
 }
 
+// WithMessagePrefix adds a fixed message prefix to the current log.
+func (o *log) WithMessagePrefix(prefix string) Log {
+	if o.prefix == prefix {
+		return o
+	}
+	return &log{
+		core: o.core, fields: o.fields, ctx: o.ctx, caller: o.caller, stack: o.stack,
+		prefix: prefix,
+	}
+}
+
 // WithField adds the given extended data to the log.
 func (o *log) WithField(key string, value interface{}) Log {
 	if len(o.fields) == 0 {
-		return &log{core: o.core, fields: internal.Fields{key: value}, ctx: o.ctx, caller: o.caller, stack: o.stack}
+		return &log{
+			core: o.core, ctx: o.ctx, caller: o.caller, prefix: o.prefix, stack: o.stack,
+			fields: internal.Fields{key: value},
+		}
 	}
-	r := &log{core: o.core, fields: o.fields.Clone(1), ctx: o.ctx, caller: o.caller, stack: o.stack}
+	r := &log{
+		core: o.core, ctx: o.ctx, caller: o.caller, prefix: o.prefix, stack: o.stack,
+		fields: o.fields.Clone(1),
+	}
 	r.fields[key] = value
 	return r
 }
@@ -284,14 +305,23 @@ func (o *log) WithError(err error) Log {
 // WithFields adds the given multiple extended data to the log.
 func (o *log) WithFields(fields map[string]interface{}) Log {
 	if len(o.fields) == 0 {
-		return &log{core: o.core, fields: internal.MakeFields(fields), ctx: o.ctx, caller: o.caller, stack: o.stack}
+		return &log{
+			core: o.core, ctx: o.ctx, caller: o.caller, prefix: o.prefix, stack: o.stack,
+			fields: internal.MakeFields(fields),
+		}
 	}
-	return &log{core: o.core, fields: o.fields.With(fields), ctx: o.ctx, caller: o.caller, stack: o.stack}
+	return &log{
+		core: o.core, ctx: o.ctx, caller: o.caller, prefix: o.prefix, stack: o.stack,
+		fields: o.fields.With(fields),
+	}
 }
 
 // WithContext adds the given context to the log.
 func (o *log) WithContext(ctx context.Context) Log {
-	return &log{core: o.core, fields: o.fields, ctx: ctx, caller: o.caller, stack: o.stack}
+	return &log{
+		core: o.core, fields: o.fields, caller: o.caller, prefix: o.prefix, stack: o.stack,
+		ctx: ctx,
+	}
 }
 
 // WithCaller forces the caller report of the current log to be enabled.
@@ -304,7 +334,10 @@ func (o *log) WithCaller(skip ...int) Log {
 	if o.caller != nil && o.caller.Equal(n) {
 		return o
 	}
-	return &log{core: o.core, fields: o.fields, ctx: o.ctx, caller: internal.NewCallerReporter(n), stack: o.stack}
+	return &log{
+		core: o.core, fields: o.fields, ctx: o.ctx, prefix: o.prefix, stack: o.stack,
+		caller: internal.NewCallerReporter(n),
+	}
 }
 
 // WithStack adds call stack information to the current log.
@@ -312,12 +345,15 @@ func (o *log) WithStack() Log {
 	if o.stack {
 		return o
 	}
-	return &log{core: o.core, fields: o.fields, ctx: o.ctx, caller: o.caller, stack: true}
+	return &log{
+		core: o.core, fields: o.fields, ctx: o.ctx, caller: o.caller, prefix: o.prefix,
+		stack: true,
+	}
 }
 
 // Format and record the current log.
 func (o *log) record(level Level, message string) {
-	entity := o.core.getEntity(o, level, message, o.getCaller(level))
+	entity := o.core.getEntity(o, level, o.prefix+message, o.getCaller(level))
 	defer o.core.putEntity(entity)
 
 	if o.stack {
