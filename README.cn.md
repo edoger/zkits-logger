@@ -22,6 +22,10 @@
 - 灵活的日志钩子支持。
 - 高度可定制的日志格式，可自由配置日志格式化器。
 
+![](text.png)
+
+> 示例图片使用 ConsoleFormatter 并且禁用了 ExitFunc 和 PanicFunc
+
 ## 安装 ##
 
 ```sh

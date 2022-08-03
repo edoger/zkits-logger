@@ -23,6 +23,10 @@ This is a zero-dependency standard JSON log library that supports structured JSO
  - Flexible log hook support.
  - Custom log formatter support.
 
+![](text.png)
+
+> Example image uses the ConsoleFormatter and disables the exit and panic functions.
+
 ## Install ##
 
 ```sh
