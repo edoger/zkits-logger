@@ -55,13 +55,13 @@ This is a zero-dependency standard JSON log library that supports structured JSO
 
 ![](doc.png)
 
-#### Zero Dependencies ####
+### Zero Dependencies ###
 
 We think the logger should be lightweight enough, because the applications we develop are already complex 
 enough, they often have massive third-party dependencies, so let's not add additional dependencies to the 
 application, which is why I built this library one of the reasons.
 
-#### No Locker ####
+### No Locker ###
 
 For the performance of the logger, we adopt a lock-free design as a whole.
 Therefore, we agree that the shared data of the logger is read-only, and we require the application 
@@ -95,7 +95,7 @@ using the logging interface ``` Logger.AsLog() ``` to provide logging functional
     }
 ```
 
-#### Chained Calls & Log Tree ####
+### Chained Calls & Log Tree ###
 
 Chained calls are more in line with the way we think when writing source code (left-to-right, continuous).
 We have designed a number of ``` Log.With* ``` methods to extend the additional fields of the log, 
@@ -136,7 +136,7 @@ The application is not a modular design? No additional properties?
     log.Info("Step 2 is done!") // Log message: "Prefix: Step 2 is done!"
 ```
 
-#### Quickly Locate Bugs ####
+### Quickly Locate Bugs ###
 
 The purpose of the log is to observe the running status of our application. 
 When there is a problem with the application, the log can help us quickly find and solve the root cause of the problem.
@@ -171,7 +171,7 @@ We've designed our logger with this in mind, and for this reason we provide a ve
 
 ![](talks.png)
 
-#### Log Hooks ####
+### Log Hooks ###
 
 Log hooks allow us to do some extra things before logging.
 Log hooks are designed to uniformly handle log events (by Level) that we are interested in.
@@ -221,7 +221,7 @@ Do we have multiple hooks that need to be registered?
 
 > HookBag also needs to adhere to our "No Locker" philosophy, do not continue to add hooks after registration.
 
-#### Log Formatter ####
+### Log Formatter ###
 
 The log formatter is used to format the log object into string data as expected.
 The log formatter should be as efficient as possible, this is the most CPU-intensive component of the logger.
@@ -284,7 +284,7 @@ but they are rigorously tested and work out of the box.
     f := NewConsoleFormatter()
 ```
 
-#### Output Interceptor ####
+### Output Interceptor ###
 
 The output interceptor can bypass the output writer of the logger binding 
 (``` Logger.SetOutput ``` or ``` Logger.SetLevelOutput ``` or ``` Logger.SetLevelsOutput ```) 
@@ -302,7 +302,7 @@ as ``` io.Writer ```).
 > Once the output interceptor is enabled, we will no longer write logs to the log writer,
 > even if the interceptor returns an error.
 
-#### Log Context ####
+### Log Context & Trace ###
 
 The log context is to support the trace technology. 
 By default, we will not do any operations on the context object bound to the log. 
@@ -328,7 +328,7 @@ process the trace data.
 > ⚠️ The custom log formatter needs to append a newline after the formatted log data is 
 > written into the buffer, otherwise the log will not wrap automatically.
 
-#### Log Bridge ####
+### Log Bridge ###
 
 Log bridge is a concept here. Applications often have many third-party libraries and components. 
 In order to adapt to the log loggers of these libraries and components, we built some log bridges 
