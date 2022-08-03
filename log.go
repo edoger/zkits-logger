@@ -21,6 +21,7 @@ import (
 	"io"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/edoger/zkits-logger/internal"
@@ -184,7 +185,7 @@ type Log interface {
 // and each independent Logger shares the same core instance.
 type core struct {
 	name        string
-	level       Level
+	level       uint32
 	formatter   Formatter
 	writer      io.Writer
 	levelWriter map[Level]io.Writer
@@ -203,7 +204,7 @@ type core struct {
 func newCore(name string) *core {
 	return &core{
 		name:        name,
-		level:       TraceLevel,
+		level:       uint32(TraceLevel),
 		formatter:   DefaultJSONFormatter(),
 		writer:      os.Stdout,
 		levelWriter: make(map[Level]io.Writer),
@@ -430,7 +431,7 @@ func (o *log) Log(level Level, args ...interface{}) {
 
 // Uses the given parameters to record a log of the specified level.
 func (o *log) log(level Level, args ...interface{}) {
-	if !o.core.level.IsEnabled(level) {
+	if !Level(atomic.LoadUint32(&o.core.level)).IsEnabled(level) {
 		return
 	}
 	o.record(level, fmt.Sprint(args...))
@@ -448,7 +449,7 @@ func (o *log) Logln(level Level, args ...interface{}) {
 
 // Uses the given parameters to record a log of the specified level.
 func (o *log) logln(level Level, args ...interface{}) {
-	if !o.core.level.IsEnabled(level) {
+	if !Level(atomic.LoadUint32(&o.core.level)).IsEnabled(level) {
 		return
 	}
 	s := fmt.Sprintln(args...)
@@ -467,7 +468,7 @@ func (o *log) Logf(level Level, format string, args ...interface{}) {
 
 // Uses the given parameters to record a log of the specified level.
 func (o *log) logf(level Level, format string, args ...interface{}) {
-	if !o.core.level.IsEnabled(level) {
+	if !Level(atomic.LoadUint32(&o.core.level)).IsEnabled(level) {
 		return
 	}
 	o.record(level, fmt.Sprintf(format, args...))

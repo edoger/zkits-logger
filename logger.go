@@ -18,6 +18,7 @@ import (
 	"io"
 	stdlog "log"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"github.com/edoger/zkits-logger/internal"
@@ -110,12 +111,12 @@ type logger struct {
 
 // GetLevel returns the current logger level.
 func (o *logger) GetLevel() Level {
-	return o.core.level
+	return Level(atomic.LoadUint32(&o.core.level))
 }
 
 // SetLevel sets the current logger level.
 func (o *logger) SetLevel(level Level) Logger {
-	o.core.level = level
+	atomic.StoreUint32(&o.core.level, uint32(level))
 	return o
 }
 
