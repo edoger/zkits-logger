@@ -425,7 +425,7 @@ func (o *log) getCaller(level Level) string {
 // called automatically after logging is completed.
 // If the given log level is invalid, the log will be discarded.
 func (o *log) Log(level Level, args ...interface{}) {
-	o.log(level, fmt.Sprint(args...))
+	o.log(level, args...)
 }
 
 // Uses the given parameters to record a log of the specified level.
