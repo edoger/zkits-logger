@@ -18,5 +18,5 @@ test_script:
   - go test -v -coverprofile=coverage.out -covermode=atomic ./...
 
 on_success:
-  - go get -v -u github.com/mattn/goveralls
+  - go install github.com/mattn/goveralls@latest
   - goveralls -coverprofile=coverage.out -service=appveyor -repotoken %COVERALLS_TOKEN%
