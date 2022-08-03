@@ -34,23 +34,21 @@ This is a zero-dependency standard JSON log library that supports structured JSO
 ## Install ##
 
 ```sh
-go get -u -v github.com/edoger/zkits-logger
+   go get -u -v github.com/edoger/zkits-logger
 ```
 
 ## Quick Start ##
 
 ```go
-import "github.com/edoger/zkits-logger"
+    import "github.com/edoger/zkits-logger"
 
-// Creates a logger instance with the specified name.
-// Empty name are allowed.
-log := logger.New("app")
-
-// {"level":"info","message":"Hello.","name":"app","time":"2020-02-20T20:20:20+08:00"}
-log.Info("Hello.")
-
-// {"fields":{"field":1},"level":"info","message":"Hello.","name":"app","time":"2020-02-20T20:20:20+08:00"}
-log.WithField("field", 1).Info("Hello.")
+    // Creates a logger instance with the specified name.
+    // Empty name are allowed.
+    log := logger.New("app")
+    // {"level":"info","message":"Hello.","name":"app","time":"2020-02-20T20:20:20+08:00"}
+    log.Info("Hello.")
+    // {"fields":{"field":1},"level":"info","message":"Hello.","name":"app","time":"2020-02-20T20:20:20+08:00"}
+    log.WithField("field", 1).Info("Hello.")
 ```
 
 ## Design Concept ##
@@ -76,25 +74,25 @@ We recommend initializing the logger (Logger) as soon as it is created (if requi
 using the logging interface ``` Logger.AsLog() ``` to provide logging functionality.
 
 ```go
-package log
+    package log
+    
+    import "github.com/edoger/zkits-logger"
+    
+    var defaultLogger = logger.New("name")
 
-import "github.com/edoger/zkits-logger"
+    // Initialize the logger.
+    func Initialize(/* Your config */) {
+        // defaultLogger.SetLevel(Level)
+        // defaultLogger.SetOutput(Writer)
+        // defaultLogger.SetFormatter(Formatter)
+        // ... ...
+    }
 
-var defaultLogger = logger.New("name")
-
-// Initialize the logger.
-func Initialize(/* Your config */) {
-    // g.SetLevel(Level)
-    // g.SetOutput(Writer)
-    // g.SetFormatter(Formatter)
-    // ... ...
-}
-
-// GetLogger gets the default logger instance.
-func GetLogger() logger.Log {
-    // Mask the setting method of Logger.
-    return defaultLogger.AsLog()
-}
+    // GetLogger gets the default logger instance.
+    func GetLogger() logger.Log {
+        // Mask the setting method of Logger.
+        return defaultLogger.AsLog()
+    }
 ```
 
 #### Chained Calls & Log Tree ####
@@ -106,40 +104,36 @@ At the same time, these methods will create and return new log objects,
 we can use this feature to add differentiated fields to different modules.
 
 ```go
-// Create Log instance with additional properties.
-// All SubLog inherit the properties of the BaseLog (properties with the same name will be overwritten), 
-// and they are independent of each other and no longer associated with the BaseLog.
-SubLog1 := BaseLog.WithField("key", value)
-SubLog2 := BaseLog.WithFields(map[string]interface{}{/* multiple fields */})
-SubLog3 := BaseLog.WithContext(ctx)
-/* More ... */
+    // Create Log instance with additional properties.
+    // All SubLog inherit the properties of the BaseLog (properties with the same name will be overwritten), 
+    // and they are independent of each other and no longer associated with the BaseLog.
+    SubLog1 := BaseLog.WithField("key", value)
+    SubLog2 := BaseLog.WithFields(map[string]interface{}{/* multiple fields */})
+    SubLog3 := BaseLog.WithContext(ctx)
+    /* More ... */
 
-// Add a logger for the submodule, the logs recorded by the submodule all have
-// the additional properties we added.
-SubModule.WithLogger(Log.WithField("module", "ModuleName"))
+    // Add a logger for the submodule, the logs recorded by the submodule all have
+    // the additional properties we added.
+    SubModule.WithLogger(Log.WithField("module", "ModuleName"))
 ```
 
 Best practices:
 
 ```go
-// Good
-Log.WithFields(map[string]interface{}{"field1": var1, "field2": var2})
-
-// Bad
-Log.WithField("field1", var1).WithField("field2", var2)
+    // Good
+    Log.WithFields(map[string]interface{}{"field1": var1, "field2": var2})
+    // Bad
+    Log.WithField("field1", var1).WithField("field2", var2)
 ```
 
 The application is not a modular design? No additional properties?
 
 ```go
-// Add a fixed prefix to log messages.
-log := Log.WithMessagePrefix("Prefix: ")
+    // Add a fixed prefix to log messages.
+    log := Log.WithMessagePrefix("Prefix: ")
 
-/* Do something */
-log.Info("Step 1 is done!") // Log message: "Prefix: Step 1 is done!"
-
-/* Do something */
-log.Info("Step 2 is done!") // Log message: "Prefix: Step 2 is done!"
+    log.Info("Step 1 is done!") // Log message: "Prefix: Step 1 is done!"
+    log.Info("Step 2 is done!") // Log message: "Prefix: Step 2 is done!"
 ```
 
 #### Quickly Locate Bugs ####
@@ -151,26 +145,26 @@ We've designed our logger with this in mind, and for this reason we provide a ve
 **Log error:**
 
 ```go
-// Tell us the file name and line number when logging the error.
-Log.WithCaller().WithError(err).Error("Task failed!") // Log errors into separate field.
-Log.WithCaller().Errorf("Task failed: %s.", err)
+    // Tell us the file name and line number when logging the error.
+    Log.WithCaller().WithError(err).Error("Task failed!") // Log errors into separate field.
+    Log.WithCaller().Errorf("Task failed: %s.", err)
 
-// Too troublesome? Code too verbose? Then we set it globally!
-// Callers are now automatically added to all logs that meet the level.
-Logger.EnableLevelCaller(ErrorLevel)
-Logger.EnableLevelsCaller([]Level{ErrorLevel, FatalLevel, PanicLevel})
+    // Too troublesome? Code too verbose? Then we set it globally!
+    // Callers are now automatically added to all logs that meet the level.
+    Logger.EnableLevelCaller(ErrorLevel)
+    Logger.EnableLevelsCaller([]Level{ErrorLevel, FatalLevel, PanicLevel})
 ```
 
 **Panic:**
 
 ```go
-// Tell us the crash call stack information.
-Log.WithStack().Error("Application crash!")
+    // Tell us the crash call stack information.
+    Log.WithStack().Error("Application crash!")
 
-// Setting Logger.SetExitFunc(nil) disables the automatic call os.Exit. 
-Log.WithStack().Fatal("Application crash!")
-// Setting Logger.SetPanicFunc(nil) disables the automatic call panic. 
-Log.WithStack().Panic("Application crash!")
+    // Setting Logger.SetExitFunc(nil) disables the automatic call os.Exit. 
+    Log.WithStack().Fatal("Application crash!")
+    // Setting Logger.SetPanicFunc(nil) disables the automatic call panic. 
+    Log.WithStack().Panic("Application crash!")
 ```
 
 ## Future Overview ##
@@ -184,45 +178,45 @@ Log hooks are designed to uniformly handle log events (by Level) that we are int
 Log hooks should be lightweight enough, such as: counting the number of logs, triggering alarms, etc.
 
 ```go
-// Define the hook for our application.
-type AppHook struct {}
+    // Define the hook for our application.
+    type AppHook struct {}
 
-func (*AppHook) Levels() []Level {
-    return []Level{ErrorLevel, FatalLevel, PanicLevel}
-}
+    func (*AppHook) Levels() []Level {
+        return []Level{ErrorLevel, FatalLevel, PanicLevel}
+    }
 
-func (*AppHook) Fire(s Summary) error {
-    // Do something!
-    return nil
-}
+    func (*AppHook) Fire(s Summary) error {
+        // Do something!
+        return nil
+    }
 
-// Register application log hook.
-Logger.AddHook(new(AppHook))
+    // Register application log hook.
+    Logger.AddHook(new(AppHook))
 ```
 
 Don't want to define hook struct?
 
 ```go
-Logger.AddHookFunc([]Level{ErrorLevel}, func(s Summary) error {
-    // Do something!
-    return nil
-})
+    Logger.AddHookFunc([]Level{ErrorLevel}, func(s Summary) error {
+        // Do something!
+        return nil
+    })
 ```
 
 Do we have multiple hooks that need to be registered?
 
 ```go
-// Create a hook collection.
-bag := NewHookBag()
+    // Create a hook collection.
+    bag := NewHookBag()
 
-// Add our hooks.
-bag.Add(Hook1)
-bag.Add(Hook2)
-/* ... More ... */
-bag.Add(HookN)
+    // Add our hooks.
+    bag.Add(Hook1)
+    bag.Add(Hook2)
+    /* ... More ... */
+    bag.Add(HookN)
 
-// Register them all at once.
-Logger.AddHook(bag)
+    // Register them all at once.
+    Logger.AddHook(bag)
 ```
 
 > HookBag also needs to adhere to our "No Locker" philosophy, do not continue to add hooks after registration.
@@ -238,13 +232,13 @@ but they are rigorously tested and work out of the box.
 **JSON Formatter**
 
 ```go
-// The default formatter, if you don't change it, that's it.
-f := DefaultJSONFormatter()
+    // The default formatter, if you don't change it, that's it.
+    f := DefaultJSONFormatter()
 
-// Create one and configure custom field names.
-// If the full parameter is true, it will always ensure that all fields exist in the top-level json object.
-f, err := NewJSONFormatter(keys map[string]string, full bool)
-f := MustNewJSONFormatter(keys map[string]string, full bool)
+    // Create one and configure custom field names.
+    // If the full parameter is true, it will always ensure that all fields exist in the top-level json object.
+    f, err := NewJSONFormatter(keys map[string]string, full bool)
+    f := MustNewJSONFormatter(keys map[string]string, full bool)
 ```
 
 > Custom JSON field names will not benefit from the optimizations of the JSON serializer.
@@ -252,57 +246,57 @@ f := MustNewJSONFormatter(keys map[string]string, full bool)
 **Text Formatter**
 
 ```go
-f := DefaultTextFormatter()
-f := DefaultQuoteTextFormatter() // Escape invisible characters.
+    f := DefaultTextFormatter()
+    f := DefaultQuoteTextFormatter() // Escape invisible characters.
 
-// Custom line text format.
-// The format parameter is used to control the format of the log, and it has many control parameters.
-// For example:
-//     "[{name}][{time}][{level}] {caller} {message} {fields}"
-// The supported placeholders are:
-//     {name}      The name of the logger that recorded this log.
-//     {time}      Record the time of this log.
-//     {level}     The level of this log.
-//     {caller}    The name and line number of the file where this log was generated. (If enabled)
-//     {message}   The message of this log.
-//     {fields}    The extended fields of this log. (if it exists)
-// It is worth knowing:
-//     1. For the {time} parameter, we can specify time format, like this: {time@2006-01-02 15:04:05}.
-//     2. For the {level} parameter, we can specify level format, like this: {level@sc},
-//        {level@sc} or {level@cs} will call the Level.ShortCapitalString method.
-//        {level@s} will call the Level.ShortString method.
-//        {level@c} will call the Level.CapitalString method.
-//        For other will call the Level.String method.
-//     3. Considering the aesthetics of the format, for {caller} and {fields}, if
-//        there is non-empty data, a space will be automatically added in front.
-//        If this behavior is not needed, use {caller@?} or {fields@?} parameters.
-// The quote parameter is used to escape invisible characters in the log.
-f, err := NewTextFormatter(format string, quote bool)
-f := MustNewTextFormatter(format string, quote bool)
+    // The format parameter is used to control the format of the log, and it has many control parameters.
+    // For example:
+    //     "[{name}][{time}][{level}] {caller} {message} {fields}"
+    // The supported placeholders are:
+    //     {name}      The name of the logger that recorded this log.
+    //     {time}      Record the time of this log.
+    //     {level}     The level of this log.
+    //     {caller}    The name and line number of the file where this log was generated. (If enabled)
+    //     {message}   The message of this log.
+    //     {fields}    The extended fields of this log. (if it exists)
+    //     {stack}     The call stack of this log. (if it exists)
+    // It is worth knowing:
+    //     1. For the {time} parameter, we can specify time format, like this: {time@2006-01-02 15:04:05}.
+    //     2. For the {level} parameter, we can specify level format, like this: {level@sc},
+    //        {level@sc} or {level@cs} will call the Level.ShortCapitalString method.
+    //        {level@s} will call the Level.ShortString method.
+    //        {level@c} will call the Level.CapitalString method.
+    //        For other will call the Level.String method.
+    //     3. Considering the aesthetics of the format, for {caller} and {fields} and {stack}, if
+    //        there is non-empty data, a space will be automatically added in front.
+    //        If this behavior is not needed, use {caller@?} or {fields@?} or {stack@?} parameters.
+    // The quote parameter is used to escape invisible characters in the log.
+    f, err := NewTextFormatter(format string, quote bool)
+    f := MustNewTextFormatter(format string, quote bool)
 ```
 
 **Console Formatter**
 
 ```go
-// The console formatter is very similar to the text formatter. The only difference is that
-// we output different console colors for different log levels, which is very useful when
-// outputting logs from the console.
-f := NewConsoleFormatter()
+    // The console formatter is very similar to the text formatter. The only difference is that
+    // we output different console colors for different log levels, which is very useful when
+    // outputting logs from the console.
+    f := NewConsoleFormatter()
 ```
 
 #### Output Interceptor ####
 
-The output interceptor can bypass the output writer of the logger binding (``` Logger.SetOutput ``` or 
-``` Logger.SetLevelOutput `` or ``` Logger.SetLevelsOutput ```) 
+The output interceptor can bypass the output writer of the logger binding 
+(``` Logger.SetOutput ``` or ``` Logger.SetLevelOutput ``` or ``` Logger.SetLevelsOutput ```) 
 and output the log to our custom system (these systems are often dynamic or cannot be wrapped 
 as ``` io.Writer ```).
 
 ```go
-// The io.Writer in the interceptor parameter is the io.Writer instance bound by the logger.
-Logger.SetOutputInterceptor(func(s Summary, w io.Writer) (int, error) {
-    // Do something!
-    return s.Size(), nil
-})
+    // The io.Writer in the interceptor parameter is the io.Writer instance bound by the logger.
+    Logger.SetOutputInterceptor(func(s Summary, w io.Writer) (int, error) {
+        // Do something!
+        return s.Size(), nil
+    })
 ```
 
 > Once the output interceptor is enabled, we will no longer write logs to the log writer,
@@ -316,16 +310,16 @@ If you need to use the link tracking technology, you should define a custom log 
 process the trace data.
 
 ```go
-// Bind the context for the log.
-Log.WithContext(ctx)
+    // Bind the context for the log.
+    Log.WithContext(ctx)
 
-// Register a formatter that supports parsing trace data.
-Logger.SetFormatter(FormatterFunc(func(e Entity, b *bytes.Buffer) error {
-    ctx := e.Context()
-    // 1. Parse trace data from Context.
-    // 2. Formats the log Entity and writes the data to the Buffer.
-    return nil
-}))
+    // Register a formatter that supports parsing trace data.
+    Logger.SetFormatter(FormatterFunc(func(e Entity, b *bytes.Buffer) error {
+        ctx := e.Context()
+        // 1. Parse trace data from Context.
+        // 2. Formats the log Entity and writes the data to the Buffer.
+        return nil
+    }))
 ```
 
 > Parsing trace data is difficult to standardize, and solutions used by different applications 
@@ -344,13 +338,13 @@ these libraries and components.
 **Standard Library Logger**
 
 ```go
-import log // Standard log package
+    import log // Standard log package
 
-// Convert our logger to the standard library logger instance.
-g := Logger.AsStandardLogger() // Return *log.Logger instance.
+    // Convert our logger to the standard library logger instance.
+    g := Logger.AsStandardLogger() // Return *log.Logger instance.
 
-// You can also customize the default log level.
-log.New(NewLevelWriter(DebugLevel, Logger.AsLog()))
+    // You can also customize the default log level.
+    log.New(NewLevelWriter(DebugLevel, Logger.AsLog()))
 ```
 
 > 💣 The *log.Logger automatically exits the system and panics when logging fatal and panic level log.
