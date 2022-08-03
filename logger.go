@@ -16,6 +16,7 @@ package logger
 
 import (
 	"io"
+	stdlog "log"
 	"os"
 	"time"
 
@@ -91,6 +92,9 @@ type Logger interface {
 
 	// AsLog converts current Logger to Log instances, which is unidirectional.
 	AsLog() Log
+
+	// AsStandardLogger converts the current logger to a standard library logger instance.
+	AsStandardLogger() *stdlog.Logger
 }
 
 // New creates a new Logger instance.
@@ -252,4 +256,9 @@ func (o *logger) AddHookFunc(levels []Level, hook func(Summary) error) Logger {
 // AsLog converts current Logger to Log instances, which is unidirectional.
 func (o *logger) AsLog() Log {
 	return &o.log
+}
+
+// AsStandardLogger converts the current logger to a standard library logger instance.
+func (o *logger) AsStandardLogger() *stdlog.Logger {
+	return stdlog.New(NewLevelWriter(InfoLevel, o.AsLog()), "", 0)
 }

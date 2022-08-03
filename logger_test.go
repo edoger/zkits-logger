@@ -703,3 +703,24 @@ func TestLogger_AsLog(t *testing.T) {
 		t.Fatal("Logger.AsLog(): Got Logger instance.")
 	}
 }
+
+func TestLogger_AsStandardLogger(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+	o.SetFormatter(FormatterFunc(func(e Entity, b *bytes.Buffer) error {
+		b.WriteString(e.Level().String() + " " + e.Message())
+		return nil
+	}))
+
+	l := o.AsStandardLogger()
+	if l == nil {
+		t.Fatal("Logger.AsStandardLogger(): nil")
+	}
+	l.Print("test")
+	want := "info test"
+	if got := w.String(); got != want {
+		t.Fatalf("Logger.AsStandardLogger(): got %q, want %q", got, want)
+	}
+}
