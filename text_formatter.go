@@ -54,6 +54,7 @@ func DefaultQuoteTextFormatter() Formatter {
 //     {caller}    The name and line number of the file where this log was generated. (If enabled)
 //     {message}   The message of this log.
 //     {fields}    The extended fields of this log. (if it exists)
+//     {stack}     The call stack of this log. (if it exists)
 // It is worth knowing:
 //     1. For the {time} parameter, we can specify time format, like this: {time@2006-01-02 15:04:05}.
 //     2. For the {level} parameter, we can specify level format, like this: {level@sc},
@@ -61,9 +62,9 @@ func DefaultQuoteTextFormatter() Formatter {
 //        {level@s} will call the Level.ShortString method.
 //        {level@c} will call the Level.CapitalString method.
 //        For other will call the Level.String method.
-//     3. Considering the aesthetics of the format, for {caller} and {fields}, if
+//     3. Considering the aesthetics of the format, for {caller} and {fields} and {stack}, if
 //        there is non-empty data, a space will be automatically added in front.
-//        If this behavior is not needed, use {caller@?} or {fields@?} parameters.
+//        If this behavior is not needed, use {caller@?} or {fields@?} or {stack@?} parameters.
 // The quote parameter is used to escape invisible characters in the log.
 func NewTextFormatter(format string, quote bool) (Formatter, error) {
 	sub := formatRegexp.FindAllStringSubmatch(format, -1)
