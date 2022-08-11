@@ -31,35 +31,42 @@ func DefaultJSONFormatter() Formatter {
 	return defaultJSONFormatter
 }
 
+// NewJSONFormatterFromPool creates a JSON formatter from the given JSON serializable object pool.
+func NewJSONFormatterFromPool(p JSONFormatterObjectPool) Formatter {
+	return &jsonFormatter{pool: p}
+}
+
 // NewJSONFormatter creates and returns an instance of the log json formatter.
 // The keys parameter is used to modify the default json field name.
-// If the full parameter is true, it will always ensure that all fields exist in
-// the top-level json object.
+// If the full parameter is true, it will always ensure that all fields exist in the top-level json object.
 func NewJSONFormatter(keys map[string]string, full bool) (Formatter, error) {
-	m := map[string]string{
-		"name": "name", "time": "time", "level": "level", "message": "message",
-		"fields": "fields", "caller": "caller", "stack": "stack",
-	}
-
-	structure := true
 	if len(keys) > 0 {
+		structure := true
+		mapping := map[string]string{
+			"name": "name", "time": "time", "level": "level", "message": "message",
+			"fields": "fields", "caller": "caller", "stack": "stack",
+		}
 		for key, value := range keys {
-			if m[key] == "" {
+			if mapping[key] == "" {
+				// We require that the key-name map must be pure.
 				return nil, fmt.Errorf("invalid json formatter key %q", key)
 			}
 			// We ignore the case where all fields are mapped as empty, which is more practical.
-			if value != "" && m[key] != value {
+			if value != "" && mapping[key] != value {
 				structure = false
-				m[key] = value
+				mapping[key] = value
 			}
 		}
+		// when the json field cannot be predicted in advance, we use map to package the log data.
+		// is there a better solution to improve the efficiency of json serialization?
+		if !structure {
+			return NewJSONFormatterFromPool(newJSONFormatterMapPool(full, mapping)), nil
+		}
 	}
-	f := &jsonFormatter{
-		name: m["name"], time: m["time"], level: m["level"], message: m["message"],
-		fields: m["fields"], caller: m["caller"], stack: m["stack"],
-		full: full, structure: structure,
-	}
-	return f, nil
+	// In most cases, the performance of json serialization of structure is higher than
+	// that of json serialization of map. When the json field name has not changed, we
+	// try to use structure for json serialization.
+	return NewJSONFormatterFromPool(newJSONFormatterObjectPool(full)), nil
 }
 
 // MustNewJSONFormatter is like NewJSONFormatter, but triggers a panic when an error occurs.
@@ -71,17 +78,85 @@ func MustNewJSONFormatter(keys map[string]string, full bool) Formatter {
 	return f
 }
 
+// JSONFormatterObjectPool defines a pool of serializable objects for JSON formatter.
+// This object pool is used to create and recycle json log objects.
+type JSONFormatterObjectPool interface {
+	// GetObject creates and returns a new JSON log object from the given log Entity.
+	// The returned object must be JSON-Serializable, otherwise the formatter will fail to work.
+	GetObject(Entity) interface{}
+
+	// PutObject recycles json serialized objects.
+	// This method must clean up the log data bound to the object to free memory.
+	PutObject(interface{})
+}
+
 // The built-in json formatter.
 type jsonFormatter struct {
-	name      string
-	time      string
-	level     string
-	message   string
-	fields    string
-	caller    string
-	stack     string
-	full      bool
-	structure bool
+	pool JSONFormatterObjectPool
+}
+
+// Format formats the given log entity into character data and writes it to the given buffer.
+func (f *jsonFormatter) Format(e Entity, b *bytes.Buffer) (err error) {
+	o := f.pool.GetObject(e)
+	// The json.Encoder.Encode method automatically adds line breaks.
+	err = json.NewEncoder(b).Encode(o)
+	f.pool.PutObject(o)
+	return
+}
+
+// This is the built-in pool of serializable JSON map.
+type jsonFormatterMapPool struct {
+	full bool
+	// These fields store the names of the keys in the json object.
+	name, time, level, message, fields, caller, stack string
+}
+
+// Creates and returns a new pool of serializable JSON map.
+func newJSONFormatterMapPool(full bool, keys map[string]string) JSONFormatterObjectPool {
+	return &jsonFormatterMapPool{
+		full: full, name: keys["name"], time: keys["time"], level: keys["level"],
+		message: keys["message"], fields: keys["fields"], caller: keys["caller"], stack: keys["stack"],
+	}
+}
+
+// GetObject creates and returns a new JSON log map from the given log Entity.
+// This method is an implementation of the JSONFormatterObjectPool interface.
+func (p *jsonFormatterMapPool) GetObject(e Entity) interface{} {
+	kv := map[string]interface{}{p.level: e.Level().String(), p.message: e.Message()}
+	if name := e.Name(); p.full || name != "" {
+		kv[p.name] = name
+	}
+	if tm := e.TimeString(); p.full || tm != "" {
+		kv[p.time] = tm
+	}
+	if fields := e.Fields(); len(fields) > 0 {
+		kv[p.fields] = internal.StandardiseFieldsForJSONEncoder(fields)
+	} else {
+		if p.full { // Always keep it as an empty json object.
+			kv[p.fields] = struct{}{}
+		}
+	}
+	if caller := e.Caller(); p.full || caller != "" {
+		kv[p.caller] = caller
+	}
+	if stack := e.Stack(); len(stack) > 0 {
+		kv[p.stack] = stack
+	} else {
+		if p.full {
+			kv[p.stack] = []string{}
+		}
+	}
+	return kv
+}
+
+// PutObject does nothing here.
+// This method is an implementation of the JSONFormatterObjectPool interface.
+func (*jsonFormatterMapPool) PutObject(interface{}) { /* do nothing */ }
+
+// This is the built-in pool of serializable JSON objects.
+type jsonFormatterObjectPool struct {
+	full bool
+	pool *sync.Pool
 }
 
 // Special built-in structure for json serialization.
@@ -96,96 +171,45 @@ type jsonFormatterObject struct {
 	Time    *string     `json:"time,omitempty"`
 }
 
-// The internal temporary object pool of the json formatter.
-var jsonFormatterObjectPool = sync.Pool{
-	New: func() interface{} {
-		return new(jsonFormatterObject)
-	},
+// Creates and returns a new pool of serializable JSON objects.
+func newJSONFormatterObjectPool(full bool) JSONFormatterObjectPool {
+	return &jsonFormatterObjectPool{full: full, pool: &sync.Pool{
+		New: func() interface{} { return new(jsonFormatterObject) },
+	}}
 }
 
-// Obtain a temporary object for the json formatter from the object pool.
-func getJSONFormatterObject() *jsonFormatterObject {
-	return jsonFormatterObjectPool.Get().(*jsonFormatterObject)
-}
-
-// Put the temporary object of the json formatter back into the object pool.
-func putJSONFormatterObject(o *jsonFormatterObject) {
-	o.Caller = nil
-	o.Fields = nil
-	o.Level = ""
-	o.Message = ""
-	o.Name = ""
-	o.Stack = nil
-	o.Time = nil
-
-	jsonFormatterObjectPool.Put(o)
-}
-
-// Format formats the given log entity into character data and writes it to the given buffer.
-func (f *jsonFormatter) Format(e Entity, b *bytes.Buffer) error {
-	// In most cases, the performance of json serialization of structure is higher than
-	// that of json serialization of map. When the json field name has not changed, we
-	// try to use structure for json serialization.
-	if f.structure {
-		o := getJSONFormatterObject()
-		defer putJSONFormatterObject(o)
-
-		o.Level = e.Level().String()
-		o.Message = e.Message()
-		o.Name = e.Name()
-		if tm := e.TimeString(); f.full || tm != "" {
-			o.Time = &tm
-		}
-		if fields := e.Fields(); len(fields) > 0 {
-			o.Fields = internal.StandardiseFieldsForJSONEncoder(fields)
-		} else {
-			if f.full {
-				o.Fields = struct{}{}
-			}
-		}
-		if caller := e.Caller(); f.full || caller != "" {
-			o.Caller = &caller
-		}
-		if stack := e.Stack(); len(stack) > 0 {
-			o.Stack = stack
-		} else {
-			if f.full {
-				o.Stack = []string{}
-			}
-		}
-		// The json.Encoder.Encode method automatically adds line breaks.
-		return json.NewEncoder(b).Encode(o)
-	}
-
-	// When the json field cannot be predicted in advance, we use map to package the log data.
-	// Is there a better solution to improve the efficiency of json serialization?
-	kv := map[string]interface{}{
-		f.level:   e.Level().String(),
-		f.message: e.Message(),
-	}
-	if name := e.Name(); f.full || name != "" {
-		kv[f.name] = name
-	}
-	if tm := e.TimeString(); f.full || tm != "" {
-		kv[f.time] = tm
+// GetObject creates and returns a new JSON log object from the given log Entity.
+// This method is an implementation of the JSONFormatterObjectPool interface.
+func (p *jsonFormatterObjectPool) GetObject(e Entity) interface{} {
+	o := p.pool.Get().(*jsonFormatterObject)
+	o.Level, o.Message, o.Name = e.Level().String(), e.Message(), e.Name()
+	if tm := e.TimeString(); p.full || tm != "" {
+		o.Time = &tm
 	}
 	if fields := e.Fields(); len(fields) > 0 {
-		kv[f.fields] = internal.StandardiseFieldsForJSONEncoder(fields)
+		o.Fields = internal.StandardiseFieldsForJSONEncoder(fields)
 	} else {
-		if f.full {
-			kv[f.fields] = struct{}{}
+		if p.full { // Always keep it as an empty json object.
+			o.Fields = struct{}{}
 		}
 	}
-	if caller := e.Caller(); f.full || caller != "" {
-		kv[f.caller] = caller
+	if caller := e.Caller(); p.full || caller != "" {
+		o.Caller = &caller
 	}
 	if stack := e.Stack(); len(stack) > 0 {
-		kv[f.stack] = stack
+		o.Stack = stack
 	} else {
-		if f.full {
-			kv[f.stack] = []string{}
+		if p.full {
+			o.Stack = []string{}
 		}
 	}
-	// The json.Encoder.Encode method automatically adds line breaks.
-	return json.NewEncoder(b).Encode(kv)
+	return o
+}
+
+// PutObject recycles json serialized objects.
+// This method is an implementation of the JSONFormatterObjectPool interface.
+func (p *jsonFormatterObjectPool) PutObject(v interface{}) {
+	o := v.(*jsonFormatterObject)
+	o.Caller, o.Fields, o.Level, o.Message, o.Name, o.Stack, o.Time = nil, nil, "", "", "", nil, nil
+	p.pool.Put(o)
 }

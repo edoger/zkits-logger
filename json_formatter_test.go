@@ -26,6 +26,12 @@ func TestDefaultJSONFormatter(t *testing.T) {
 	}
 }
 
+func TestNewJSONFormatterFromPool(t *testing.T) {
+	if NewJSONFormatterFromPool(newJSONFormatterObjectPool(false)) == nil {
+		t.Fatal("NewJSONFormatterFromPool(): nil")
+	}
+}
+
 func TestNewJSONFormatter(t *testing.T) {
 	f, err := NewJSONFormatter(map[string]string{"message": "msg"}, true)
 	if err != nil {
