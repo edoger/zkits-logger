@@ -19,7 +19,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -129,13 +128,8 @@ func (w *fileWriter) swap() {
 			return
 		}
 	}
-	// We use a microsecond-level date as the suffix name of the archive log, which may
-	// change in the future. Sometimes, the number of microseconds after formatting is
-	// less than 6 characters.
-	suffix := time.Now().Format("20060102150405.999999")
-	if n := len(suffix); n < 21 {
-		suffix += strings.Repeat("0", 21-n)
-	}
+	// Accurate to the nanosecond, it maximizes the assurance that file names are not duplicated.
+	suffix := time.Now().Format("20060102150405.000000000")
 	if err := os.Rename(w.name, w.name+"."+suffix); err != nil {
 		internal.EchoError("Failed to rename log file %s to %s.%s: %s.", w.name, w.name, suffix, err)
 		return
