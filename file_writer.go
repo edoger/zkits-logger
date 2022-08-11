@@ -117,24 +117,18 @@ func (w *fileWriter) swap() {
 	// We need to make sure that the log file is written to disk before closing the file.
 	if err := w.fd.Sync(); err != nil {
 		internal.EchoError("Failed to sync log file %s: %s.", w.name, err)
-		return
 	}
 	// On the windows platform, the file must be closed before renaming the file.
 	// We need to ignore the error that the file is closed.
 	if err := w.fd.Close(); err != nil {
-		e, ok := err.(*os.PathError)
-		if !ok || e.Err != os.ErrClosed {
-			internal.EchoError("Failed to close log file %s: %s.", w.name, err)
-			return
-		}
+		internal.EchoError("Failed to close log file %s: %s.", w.name, err)
 	}
 	// Accurate to the nanosecond, it maximizes the assurance that file names are not duplicated.
 	suffix := time.Now().Format("20060102150405.000000000")
 	if err := os.Rename(w.name, w.name+"."+suffix); err != nil {
 		internal.EchoError("Failed to rename log file %s to %s.%s: %s.", w.name, w.name, suffix, err)
-		return
 	}
-	fd, err := os.OpenFile(w.name, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	fd, err := os.OpenFile(w.name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		internal.EchoError("Failed to open log file %s: %s.", w.name, err)
 		return
