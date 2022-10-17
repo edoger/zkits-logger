@@ -26,6 +26,9 @@ This is a zero-dependency standard JSON log library that supports structured JSO
  - Supports output interceptor to easily hijack and control log output.
  - Provides a log file writer that supports log file rotation by size.
 
+According to the plan, this library will release 2 versions every year. 
+If there are new security issues or PRs, we will release new versions according to the actual situation.
+
 ![](text.png)
 
 > Example image uses the ConsoleFormatter and disables the exit and panic functions.
