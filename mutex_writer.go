@@ -22,13 +22,18 @@ import (
 // NewMutexWriter creates and returns a mutex writer.
 // Mutually exclusive writers ensure mutual exclusion of individual write calls.
 func NewMutexWriter(w io.Writer) io.Writer {
-	return &mutexWriter{w: w}
+	return NewMutexWriterWithLocker(w, new(sync.Mutex))
+}
+
+// NewMutexWriterWithLocker creates and returns a mutex writer from the given locker.
+func NewMutexWriterWithLocker(w io.Writer, mu sync.Locker) io.Writer {
+	return &mutexWriter{w: w, mu: mu}
 }
 
 // This is an implementation of the built-in mutex writer.
 type mutexWriter struct {
 	w  io.Writer
-	mu sync.Mutex
+	mu sync.Locker
 }
 
 // Write is an implementation of the io.Writer interface.

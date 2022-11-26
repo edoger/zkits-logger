@@ -27,6 +27,14 @@ func TestNewMutexWriter(t *testing.T) {
 	}
 }
 
+func TestNewMutexWriterWithLocker(t *testing.T) {
+	w := new(bytes.Buffer)
+	mu := new(sync.RWMutex)
+	if got := NewMutexWriterWithLocker(w, mu.RLocker()); got == nil {
+		t.Fatal("NewMutexWriterWithLocker(): return nil")
+	}
+}
+
 type testUnsafeWriter struct {
 	n uint32
 	m map[uint32][]byte
