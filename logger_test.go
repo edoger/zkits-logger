@@ -656,16 +656,16 @@ func TestLogger_BigLog(t *testing.T) {
 	o.SetLevel(TraceLevel)
 
 	var builder strings.Builder
-	for i := 0; i < 1500; i++ {
+	for i := 0; i < 5000; i++ {
 		builder.WriteByte('x')
 	}
 	o.Print(builder.String()) // Big log
-	if w.Len() < 1024 {
+	if w.Len() < 5000 {
 		t.Fatalf("Big log: %d", w.Len())
 	}
-	// For logs exceeding 1KB, the buffer will not be reused.
+	// For logs exceeding 4KB, the buffer will not be reused.
 	n := o.(*logger).core.pool.Get().(*logEntity).buffer.Cap()
-	if n > 1024 {
+	if n > 4096 {
 		t.Fatalf("Big log: %d", n)
 	}
 }

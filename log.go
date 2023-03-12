@@ -236,9 +236,9 @@ func (c *core) getEntity(l *log, level Level, message, caller string) *logEntity
 
 // Clean up and recycle the given log entity.
 func (c *core) putEntity(o *logEntity) {
-	// If the log size exceeds 1KB, we need to discard this buffer to
+	// If the log size exceeds 4KB, we need to discard this buffer to
 	// free memory faster.
-	if o.buffer.Cap() > 1024 {
+	if o.buffer.Cap() > 4096 {
 		o.buffer = bytes.Buffer{}
 	} else {
 		o.buffer.Reset()
