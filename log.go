@@ -407,16 +407,22 @@ func (o *log) write(entity *logEntity) (err error) {
 // Get the caller report. If caller reporting is not enabled in the current
 // log, an empty string is always returned.
 func (o *log) getCaller(level Level) string {
-	if o.caller != nil {
-		return o.caller.GetCaller()
+	if o.caller == nil {
+		if caller, found := o.core.levelCaller[level]; found {
+			return internal.GetCaller(caller.Skip())
+		}
+		if o.core.caller != nil {
+			return internal.GetCaller(o.core.caller.Skip())
+		}
+		return ""
 	}
 	if caller, found := o.core.levelCaller[level]; found {
-		return caller.GetCaller()
+		return internal.GetCaller(caller.Skip() + o.caller.Skip())
 	}
 	if o.core.caller != nil {
-		return o.core.caller.GetCaller()
+		return internal.GetCaller(o.core.caller.Skip() + o.caller.Skip())
 	}
-	return ""
+	return internal.GetCaller(o.caller.Skip())
 }
 
 // Log uses the given parameters to record a log of the specified level.

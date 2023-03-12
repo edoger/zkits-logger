@@ -18,20 +18,19 @@ import (
 	"testing"
 )
 
-func TestCallerReporter_GetCaller(t *testing.T) {
-	r := NewCallerReporter(1)
-	f1 := func() string { return r.GetCaller() }
+func TestGetCaller(t *testing.T) {
+	f1 := func() string { return GetCaller(1) }
 	f2 := func() string { return f1() }
 	f3 := func() string { return f2() }
 	f4 := func() string { return f3() }
 	f5 := func() string { return f4() }
 
-	got := f5() // Line 29
-	if want := "caller_caller_test.go:29"; got != want {
+	got := f5() // Line 28
+	if want := "caller_caller_test.go:28"; got != want {
 		t.Fatalf("CallerReporter.GetCaller(): got %q, want %q", got, want)
 	}
 
-	got = r.GetCaller()
+	got = GetCaller(0)
 	if want := "???:0"; got != want {
 		t.Fatalf("CallerReporter.GetCaller(): got %q, want %q", got, want)
 	}

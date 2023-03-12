@@ -25,8 +25,8 @@ const KnownCallerDepth = 5
 
 // NewCallerReporter returns a CallerReporter instance.
 func NewCallerReporter(skip int) *CallerReporter {
-	if skip == 0 {
-		return DefaultCallerReporter
+	if skip >= 0 && skip < 15 {
+		return DefaultCallerReporter[skip]
 	}
 	return &CallerReporter{skip: skip}
 }
@@ -41,10 +41,15 @@ func (o *CallerReporter) Equal(skip int) bool {
 	return o.skip == skip
 }
 
+// Skip gets the current skipped call stack depth.
+func (o *CallerReporter) Skip() int {
+	return o.skip
+}
+
 // GetCaller reports file and line number information about function invocations on
 // the calling goroutine's stack.
-func (o *CallerReporter) GetCaller() string {
-	if _, file, line, ok := runtime.Caller(o.skip + KnownCallerDepth); ok {
+func GetCaller(skipped int) string {
+	if _, file, line, ok := runtime.Caller(skipped + KnownCallerDepth); ok {
 		return filepath.Base(file) + ":" + strconv.Itoa(line)
 	}
 	return "???:0"

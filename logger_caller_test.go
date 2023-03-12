@@ -112,3 +112,21 @@ func TestLogger_InvalidCaller(t *testing.T) {
 		t.Fatalf("Logger caller: %s", got)
 	}
 }
+
+func TestLogger_WithCaller_Skip(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+	o.EnableCaller(1)
+
+	f1 := func() { o.WithCaller(2).Info("test") }
+	f2 := func() { f1() }
+	f3 := func() { f2() }
+	f3() // LINE 126
+
+	got := w.String()
+	if !strings.Contains(got, "logger_caller_test.go:126") {
+		t.Fatalf("Logger caller: %s", got)
+	}
+}
