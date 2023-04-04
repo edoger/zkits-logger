@@ -48,9 +48,6 @@ const (
 	TraceLevel
 )
 
-// Level is the level of the log.
-type Level uint32
-
 // All supported log levels.
 var allLevels = map[Level][]string{
 	PanicLevel: internal.Colorful(internal.PNC, []string{"panic", "PANIC", "pnc", "PNC"}),
@@ -61,6 +58,10 @@ var allLevels = map[Level][]string{
 	DebugLevel: internal.Colorful(internal.DBG, []string{"debug", "DEBUG", "dbg", "DBG"}),
 	TraceLevel: internal.Colorful(internal.TAC, []string{"trace", "TRACE", "tac", "TAC"}),
 }
+
+// Level is the level of the log.
+// The zero Level value is an invalid log level.
+type Level uint32
 
 // String returns the string form of the current level.
 // If the log level is not supported, always returns "unknown".
