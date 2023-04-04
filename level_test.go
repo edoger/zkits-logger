@@ -321,3 +321,19 @@ func TestGetAllLevels(t *testing.T) {
 		t.Fatalf("GetAllLevels(): %v", got)
 	}
 }
+
+func TestGetHighPriorityLevels(t *testing.T) {
+	got := GetHighPriorityLevels()
+
+	if len(got) != 3 {
+		t.Fatalf("GetHighPriorityLevels(): %v", got)
+	}
+}
+
+func TestGetLowPriorityLevels(t *testing.T) {
+	got := GetLowPriorityLevels()
+
+	if len(got) != 4 {
+		t.Fatalf("GetLowPriorityLevels(): %v", got)
+	}
+}

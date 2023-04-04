@@ -180,3 +180,13 @@ func MustParseLevel(s string) Level {
 func GetAllLevels() []Level {
 	return []Level{PanicLevel, FatalLevel, ErrorLevel, WarnLevel, InfoLevel, DebugLevel, TraceLevel}
 }
+
+// GetHighPriorityLevels returns all supported high priority log levels.
+func GetHighPriorityLevels() []Level {
+	return []Level{PanicLevel, FatalLevel, ErrorLevel}
+}
+
+// GetLowPriorityLevels returns all supported low priority log levels.
+func GetLowPriorityLevels() []Level {
+	return []Level{WarnLevel, InfoLevel, DebugLevel, TraceLevel}
+}
