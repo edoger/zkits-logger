@@ -54,6 +54,31 @@ type Log interface {
 	// WithStack adds call stack information to the current log.
 	WithStack() Log
 
+	// IsLevelEnabled checks whether the given log level is enabled.
+	// Always returns false if the given log level is invalid.
+	IsLevelEnabled(Level) bool
+
+	// IsPanicLevelEnabled checks whether the PanicLevel is enabled.
+	IsPanicLevelEnabled() bool
+
+	// IsFatalLevelEnabled checks whether the FatalLevel is enabled.
+	IsFatalLevelEnabled() bool
+
+	// IsErrorLevelEnabled checks whether the ErrorLevel is enabled.
+	IsErrorLevelEnabled() bool
+
+	// IsWarnLevelEnabled checks whether the WarnLevel is enabled.
+	IsWarnLevelEnabled() bool
+
+	// IsInfoLevelEnabled checks whether the InfoLevel is enabled.
+	IsInfoLevelEnabled() bool
+
+	// IsDebugLevelEnabled checks whether the DebugLevel is enabled.
+	IsDebugLevelEnabled() bool
+
+	// IsTraceLevelEnabled checks whether the TraceLevel is enabled.
+	IsTraceLevelEnabled() bool
+
 	// Log uses the given parameters to record a log of the specified level.
 	// If the given log level is PanicLevel, the given panic function will be
 	// called automatically after logging is completed.
@@ -423,6 +448,47 @@ func (o *log) getCaller(level Level) string {
 		return internal.GetCaller(o.core.caller.Skip() + o.caller.Skip())
 	}
 	return internal.GetCaller(o.caller.Skip())
+}
+
+// IsLevelEnabled checks whether the given log level is enabled.
+// Always returns false if the given log level is invalid.
+func (o *log) IsLevelEnabled(level Level) bool {
+	return Level(atomic.LoadUint32(&o.core.level)).IsEnabled(level)
+}
+
+// IsPanicLevelEnabled checks whether the PanicLevel is enabled.
+func (o *log) IsPanicLevelEnabled() bool {
+	return o.IsLevelEnabled(PanicLevel)
+}
+
+// IsFatalLevelEnabled checks whether the FatalLevel is enabled.
+func (o *log) IsFatalLevelEnabled() bool {
+	return o.IsLevelEnabled(FatalLevel)
+}
+
+// IsErrorLevelEnabled checks whether the ErrorLevel is enabled.
+func (o *log) IsErrorLevelEnabled() bool {
+	return o.IsLevelEnabled(ErrorLevel)
+}
+
+// IsWarnLevelEnabled checks whether the WarnLevel is enabled.
+func (o *log) IsWarnLevelEnabled() bool {
+	return o.IsLevelEnabled(WarnLevel)
+}
+
+// IsInfoLevelEnabled checks whether the InfoLevel is enabled.
+func (o *log) IsInfoLevelEnabled() bool {
+	return o.IsLevelEnabled(InfoLevel)
+}
+
+// IsDebugLevelEnabled checks whether the DebugLevel is enabled.
+func (o *log) IsDebugLevelEnabled() bool {
+	return o.IsLevelEnabled(DebugLevel)
+}
+
+// IsTraceLevelEnabled checks whether the TraceLevel is enabled.
+func (o *log) IsTraceLevelEnabled() bool {
+	return o.IsLevelEnabled(TraceLevel)
 }
 
 // Log uses the given parameters to record a log of the specified level.

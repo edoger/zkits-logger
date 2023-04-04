@@ -724,3 +724,92 @@ func TestLogger_AsStandardLogger(t *testing.T) {
 		t.Fatalf("Logger.AsStandardLogger(): got %q, want %q", got, want)
 	}
 }
+
+func TestLogger_IsLevelEnabled(t *testing.T) {
+	o := New("test")
+	o.SetLevel(TraceLevel)
+
+	items := []struct {
+		Given Level
+		Want  bool
+	}{
+		{TraceLevel, true},
+		{DebugLevel, true},
+		{InfoLevel, true},
+		{WarnLevel, true},
+		{ErrorLevel, true},
+		{FatalLevel, true},
+		{PanicLevel, true},
+		{Level(0), false},
+		{Level(10000), false},
+	}
+	for _, item := range items {
+		if got := o.IsLevelEnabled(item.Given); got != item.Want {
+			t.Fatalf("Logger.IsLevelEnabled(): got %v, want %v", got, item.Want)
+		}
+	}
+	if !o.IsPanicLevelEnabled() {
+		t.Fatal("Logger.IsPanicLevelEnabled(): got false, want true")
+	}
+	if !o.IsFatalLevelEnabled() {
+		t.Fatal("Logger.IsFatalLevelEnabled(): got false, want true")
+	}
+	if !o.IsErrorLevelEnabled() {
+		t.Fatal("Logger.IsErrorLevelEnabled(): got false, want true")
+	}
+	if !o.IsWarnLevelEnabled() {
+		t.Fatal("Logger.IsWarnLevelEnabled(): got false, want true")
+	}
+	if !o.IsInfoLevelEnabled() {
+		t.Fatal("Logger.IsInfoLevelEnabled(): got false, want true")
+	}
+	if !o.IsDebugLevelEnabled() {
+		t.Fatal("Logger.IsDebugLevelEnabled(): got false, want true")
+	}
+	if !o.IsTraceLevelEnabled() {
+		t.Fatal("Logger.IsTraceLevelEnabled(): got false, want true")
+	}
+
+	o.SetLevel(InfoLevel)
+
+	items = []struct {
+		Given Level
+		Want  bool
+	}{
+		{TraceLevel, false},
+		{DebugLevel, false},
+		{InfoLevel, true},
+		{WarnLevel, true},
+		{ErrorLevel, true},
+		{FatalLevel, true},
+		{PanicLevel, true},
+		{Level(0), false},
+		{Level(10000), false},
+	}
+	for _, item := range items {
+		if got := o.IsLevelEnabled(item.Given); got != item.Want {
+			t.Fatalf("Logger.IsLevelEnabled(): got %v, want %v", got, item.Want)
+		}
+	}
+	if !o.IsPanicLevelEnabled() {
+		t.Fatal("Logger.IsPanicLevelEnabled(): got false, want true")
+	}
+	if !o.IsFatalLevelEnabled() {
+		t.Fatal("Logger.IsFatalLevelEnabled(): got false, want true")
+	}
+	if !o.IsErrorLevelEnabled() {
+		t.Fatal("Logger.IsErrorLevelEnabled(): got false, want true")
+	}
+	if !o.IsWarnLevelEnabled() {
+		t.Fatal("Logger.IsWarnLevelEnabled(): got false, want true")
+	}
+	if !o.IsInfoLevelEnabled() {
+		t.Fatal("Logger.IsInfoLevelEnabled(): got false, want true")
+	}
+	if o.IsDebugLevelEnabled() {
+		t.Fatal("Logger.IsDebugLevelEnabled(): got true, want false")
+	}
+	if o.IsTraceLevelEnabled() {
+		t.Fatal("Logger.IsTraceLevelEnabled(): got true, want false")
+	}
+}
