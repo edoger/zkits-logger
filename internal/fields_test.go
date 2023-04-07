@@ -332,3 +332,59 @@ func TestFormatPairsToFields_WithPanicStringer(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkToString_Error(b *testing.B) {
+	err := errors.New("test")
+	for i := 0; i < b.N; i++ {
+		_ = ToString(err)
+	}
+}
+
+func BenchmarkSprint_Error(b *testing.B) {
+	err := errors.New("test")
+	for i := 0; i < b.N; i++ {
+		_ = fmt.Sprint(err)
+	}
+}
+
+func BenchmarkToString_PanicError(b *testing.B) {
+	err := new(testPanicError)
+	for i := 0; i < b.N; i++ {
+		_ = ToString(err)
+	}
+}
+
+func BenchmarkSprint_PanicError(b *testing.B) {
+	err := new(testPanicError)
+	for i := 0; i < b.N; i++ {
+		_ = fmt.Sprint(err)
+	}
+}
+
+func BenchmarkToString_Stringer(b *testing.B) {
+	sr := &testStringer{"test"}
+	for i := 0; i < b.N; i++ {
+		_ = ToString(sr)
+	}
+}
+
+func BenchmarkSprint_Stringer(b *testing.B) {
+	sr := &testStringer{"test"}
+	for i := 0; i < b.N; i++ {
+		_ = fmt.Sprint(sr)
+	}
+}
+
+func BenchmarkToString_PanicStringer(b *testing.B) {
+	sr := new(testPanicStringer)
+	for i := 0; i < b.N; i++ {
+		_ = ToString(sr)
+	}
+}
+
+func BenchmarkSprint_PanicStringer(b *testing.B) {
+	sr := new(testPanicStringer)
+	for i := 0; i < b.N; i++ {
+		_ = fmt.Sprint(sr)
+	}
+}
