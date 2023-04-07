@@ -81,6 +81,8 @@ func FormatFieldsToText(src map[string]interface{}) string {
 		switch o := v.(type) {
 		case []byte:
 			texts = append(texts, k+"="+string(o))
+		case fmt.Stringer:
+			texts = append(texts, k+"="+o.String())
 		default:
 			texts = append(texts, k+"="+fmt.Sprint(v))
 		}
@@ -90,4 +92,30 @@ func FormatFieldsToText(src map[string]interface{}) string {
 		sort.Strings(texts)
 	}
 	return strings.Join(texts, ", ")
+}
+
+// FormatPairsToFields standardizes the given pairs to fields.
+func FormatPairsToFields(pairs []interface{}) map[string]interface{} {
+	fields := make(map[string]interface{}, len(pairs)/2)
+	var key string
+	for i, j := 0, len(pairs); i < j; i += 2 {
+		switch pair := pairs[i].(type) {
+		case string:
+			key = pair
+		case fmt.Stringer:
+			key = pair.String()
+		default:
+			// We tried converting to a string, but this shouldn't happen, normally, the key
+			// of a key-value pair should be a string.
+			key = fmt.Sprint(pairs[i])
+		}
+		if i+1 < j {
+			fields[key] = pairs[i+1]
+		} else {
+			// Can't be the last key-value pair?
+			// We tried setting the value to an empty string, but that shouldn't happen.
+			fields[key] = ""
+		}
+	}
+	return fields
 }

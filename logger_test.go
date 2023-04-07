@@ -433,16 +433,13 @@ func TestLogger_WithFields(t *testing.T) {
 	})
 
 	o.Trace("foo") // Without fields
-	if fields != nil {
+	if len(fields) != 0 {
 		t.Fatalf("Fields: %v", fields)
-	}
-	if got := fields["key"]; got != nil {
-		t.Fatalf("Fields: %v", got)
 	}
 
 	o.WithFields(map[string]interface{}{"key": "bar"}).WithFields(map[string]interface{}{"key": "foo"}).Trace("foo")
-	if fields == nil {
-		t.Fatal("Fields: nil")
+	if len(fields) != 1 {
+		t.Fatalf("Fields: %v", fields)
 	}
 	if got := fields["key"].(string); got != "foo" {
 		t.Fatalf("Fields: %s", got)
@@ -463,16 +460,13 @@ func TestLogger_WithField(t *testing.T) {
 	})
 
 	o.Trace("foo") // Without field
-	if fields != nil {
+	if len(fields) != 0 {
 		t.Fatalf("Fields: %v", fields)
-	}
-	if got := fields["key"]; got != nil {
-		t.Fatalf("Fields: %v", got)
 	}
 
 	o.WithField("key", "foo").Trace("foo")
-	if fields == nil {
-		t.Fatal("Fields: nil")
+	if len(fields) != 1 {
+		t.Fatalf("Fields: %v", fields)
 	}
 	if got := fields["key"].(string); got != "foo" {
 		t.Fatalf("Fields: %s", got)
@@ -511,16 +505,13 @@ func TestLogger_WithError(t *testing.T) {
 	})
 
 	o.Trace("foo") // Without error
-	if fields != nil {
+	if len(fields) != 0 {
 		t.Fatalf("Fields: %v", fields)
-	}
-	if got := fields["error"]; got != nil {
-		t.Fatalf("Fields: %v", got)
 	}
 
 	o.WithError(errors.New("error")).Trace("foo")
-	if fields == nil {
-		t.Fatal("Fields: nil")
+	if len(fields) != 1 {
+		t.Fatalf("Fields: %v", fields)
 	}
 	if got := fields["error"].(error); got.Error() != "error" {
 		t.Fatalf("Fields: %s", got)
@@ -873,5 +864,62 @@ func TestLogger_ForceSetLevelString(t *testing.T) {
 	}
 	if level := o.GetLevel(); level != InfoLevel {
 		t.Fatalf("Logger.GetLevel(): %s", level.String())
+	}
+}
+
+func TestLogger_WithFieldPairs(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+
+	var fields map[string]interface{}
+
+	o.AddHookFunc([]Level{TraceLevel}, func(s Summary) error {
+		fields = s.Fields()
+		return nil
+	})
+
+	o.Trace("foo") // Without pairs
+	if len(fields) != 0 {
+		t.Fatalf("Fields: %v", fields)
+	}
+
+	o.WithFieldPairs("foo", "foo").Trace("foo")
+	if len(fields) != 1 {
+		t.Fatal("Fields: nil")
+	}
+	if got := fields["foo"].(string); got != "foo" {
+		t.Fatalf("Fields: %s", got)
+	}
+
+	o.WithFieldPairs("foo", "foo", "bar", "bar", "foo", "test").Trace("foo")
+	if len(fields) != 2 {
+		t.Fatalf("Fields: %v", fields)
+	}
+	if got := fields["foo"].(string); got != "test" {
+		t.Fatalf("Fields: %s", got)
+	}
+	if got := fields["bar"].(string); got != "bar" {
+		t.Fatalf("Fields: %s", got)
+	}
+
+	o.WithFieldPairs("foo", "foo", "bar").Trace("foo")
+	if len(fields) != 2 {
+		t.Fatalf("Fields: %v", fields)
+	}
+	if got := fields["foo"].(string); got != "foo" {
+		t.Fatalf("Fields: %s", got)
+	}
+	if got := fields["bar"].(string); got != "" {
+		t.Fatalf("Fields: %s", got)
+	}
+
+	o.WithFieldPairs(1, "foo").Trace("foo")
+	if len(fields) != 1 {
+		t.Fatalf("Fields: %v", fields)
+	}
+	if got := fields["1"].(string); got != "foo" {
+		t.Fatalf("Fields: %s", got)
 	}
 }

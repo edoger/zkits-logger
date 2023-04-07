@@ -45,6 +45,9 @@ type Log interface {
 	// WithFields adds the given multiple extended data to the log.
 	WithFields(map[string]interface{}) Log
 
+	// WithFieldPairs adds the given key-value pairs to the log.
+	WithFieldPairs(pairs ...interface{}) Log
+
 	// WithContext adds the given context to the log.
 	WithContext(context.Context) Log
 
@@ -300,25 +303,18 @@ func (o *log) WithMessagePrefix(prefix string) Log {
 	if o.prefix == prefix {
 		return o
 	}
-	return &log{
-		core: o.core, fields: o.fields, ctx: o.ctx, caller: o.caller, stack: o.stack,
-		prefix: prefix,
-	}
+	return &log{core: o.core, fields: o.fields, ctx: o.ctx, caller: o.caller, stack: o.stack, prefix: prefix}
 }
 
 // WithField adds the given extended data to the log.
 func (o *log) WithField(key string, value interface{}) Log {
+	r := &log{core: o.core, ctx: o.ctx, caller: o.caller, prefix: o.prefix, stack: o.stack}
 	if len(o.fields) == 0 {
-		return &log{
-			core: o.core, ctx: o.ctx, caller: o.caller, prefix: o.prefix, stack: o.stack,
-			fields: internal.Fields{key: value},
-		}
+		r.fields = internal.Fields{key: value}
+	} else {
+		r.fields = o.fields.Clone(1)
+		r.fields[key] = value
 	}
-	r := &log{
-		core: o.core, ctx: o.ctx, caller: o.caller, prefix: o.prefix, stack: o.stack,
-		fields: o.fields.Clone(1),
-	}
-	r.fields[key] = value
 	return r
 }
 
@@ -330,16 +326,30 @@ func (o *log) WithError(err error) Log {
 
 // WithFields adds the given multiple extended data to the log.
 func (o *log) WithFields(fields map[string]interface{}) Log {
+	if len(fields) == 0 {
+		return o
+	}
+	r := &log{core: o.core, ctx: o.ctx, caller: o.caller, prefix: o.prefix, stack: o.stack}
 	if len(o.fields) == 0 {
-		return &log{
-			core: o.core, ctx: o.ctx, caller: o.caller, prefix: o.prefix, stack: o.stack,
-			fields: internal.MakeFields(fields),
-		}
+		r.fields = internal.MakeFields(fields)
+	} else {
+		r.fields = o.fields.With(fields)
 	}
-	return &log{
-		core: o.core, ctx: o.ctx, caller: o.caller, prefix: o.prefix, stack: o.stack,
-		fields: o.fields.With(fields),
+	return r
+}
+
+// WithFieldPairs adds the given key-value pairs to the log.
+func (o *log) WithFieldPairs(pairs ...interface{}) Log {
+	if len(pairs) == 0 {
+		return o
 	}
+	r := &log{core: o.core, ctx: o.ctx, caller: o.caller, prefix: o.prefix, stack: o.stack}
+	if len(o.fields) == 0 {
+		r.fields = internal.FormatPairsToFields(pairs)
+	} else {
+		r.fields = o.fields.With(internal.FormatPairsToFields(pairs))
+	}
+	return r
 }
 
 // WithContext adds the given context to the log.

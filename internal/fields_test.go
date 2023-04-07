@@ -93,13 +93,46 @@ func TestStandardiseFieldsForJSONEncoder(t *testing.T) {
 	}
 }
 
+type testStringer struct {
+	v string
+}
+
+func (o *testStringer) String() string {
+	return o.v
+}
+
 func TestFormatFieldsToText(t *testing.T) {
-	want := `bar=bar, foo=1`
+	want := `bar=bar, baz=test, foo=1`
 	got := FormatFieldsToText(map[string]interface{}{
 		"foo": 1,
 		"bar": []byte("bar"),
+		"baz": &testStringer{v: "test"},
 	})
 	if want != got {
 		t.Fatalf("FormatFieldsToText(): want %q, got %q", want, got)
+	}
+}
+
+func TestFormatPairsToFields(t *testing.T) {
+	got := FormatPairsToFields([]interface{}{
+		"foo", "test",
+		1, "test",
+		&testStringer{v: "test"}, "test",
+		&testStringer{v: "bar"},
+	})
+	want := map[string]interface{}{
+		"foo":  "test",
+		"1":    "test",
+		"test": "test",
+		"bar":  "",
+	}
+	if len(want) != len(got) {
+		t.Fatalf("FormatPairsToFields(): %v", got)
+	}
+	for k, v := range want {
+		// All value is string.
+		if got[k].(string) != v.(string) {
+			t.Fatalf("FormatPairsToFields(): %v", got)
+		}
 	}
 }
