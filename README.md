@@ -1,7 +1,5 @@
 # ZKits Logger Library #
 
-English | [简体中文](README.cn.md)
-
 [![ZKits](https://img.shields.io/badge/ZKits-Library-f3c)](https://github.com/edoger/zkits-logger)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 [![Build Status](https://travis-ci.com/edoger/zkits-logger.svg?branch=master)](https://travis-ci.com/edoger/zkits-logger)
@@ -55,8 +53,6 @@ If there are new security issues or PRs, we will release new versions according 
 ```
 
 ## Design Concept ##
-
-![](doc.png)
 
 ### Zero Dependencies ###
 
@@ -171,8 +167,6 @@ We've designed our logger with this in mind, and for this reason we provide a ve
 ```
 
 ## Future Overview ##
-
-![](talks.png)
 
 ### Log Hooks ###
 
