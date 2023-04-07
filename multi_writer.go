@@ -33,7 +33,7 @@ func NewMultiWriter(writers ...io.Writer) io.Writer {
 	return &multiWriter{ws}
 }
 
-// This is a multi-channel writer.
+// This is a multiple channel writer.
 type multiWriter struct {
 	writers []io.Writer
 }
