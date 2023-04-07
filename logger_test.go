@@ -813,3 +813,65 @@ func TestLogger_IsLevelEnabled(t *testing.T) {
 		t.Fatal("Logger.IsTraceLevelEnabled(): got true, want false")
 	}
 }
+
+func TestLogger_SetLevelWithInvalidLevel(t *testing.T) {
+	o := New("test")
+
+	if level := o.GetLevel(); level != TraceLevel {
+		t.Fatalf("Logger.GetLevel(): %s", level.String())
+	}
+	invalidLevel := Level(10000)
+	if invalidLevel.IsValid() {
+		t.Fatal("Level.IsValid() return true")
+	}
+	if o.SetLevel(invalidLevel) == nil {
+		t.Fatal("Logger.SetLevel() return nil")
+	}
+	if level := o.GetLevel(); level != TraceLevel {
+		t.Fatalf("Logger.GetLevel(): %s", level.String())
+	}
+}
+
+func TestLogger_SetLevelString(t *testing.T) {
+	o := New("test")
+
+	if level := o.GetLevel(); level != TraceLevel {
+		t.Fatalf("Logger.GetLevel(): %s", level.String())
+	}
+
+	if err := o.SetLevelString("info"); err != nil {
+		t.Fatalf("Logger.SetLevelString(): %s", err)
+	}
+	if level := o.GetLevel(); level != InfoLevel {
+		t.Fatalf("Logger.GetLevel(): %s", level.String())
+	}
+
+	if err := o.SetLevelString("invalid-level-string"); err == nil {
+		t.Fatal("Logger.SetLevelString(): no error")
+	}
+	if level := o.GetLevel(); level != InfoLevel {
+		t.Fatalf("Logger.GetLevel(): %s", level.String())
+	}
+}
+
+func TestLogger_ForceSetLevelString(t *testing.T) {
+	o := New("test")
+
+	if level := o.GetLevel(); level != TraceLevel {
+		t.Fatalf("Logger.GetLevel(): %s", level.String())
+	}
+
+	if o.ForceSetLevelString("info") == nil {
+		t.Fatal("Logger.ForceSetLevelString(): return nil")
+	}
+	if level := o.GetLevel(); level != InfoLevel {
+		t.Fatalf("Logger.GetLevel(): %s", level.String())
+	}
+
+	if o.ForceSetLevelString("invalid-level-string") == nil {
+		t.Fatal("Logger.ForceSetLevelString(): return nil")
+	}
+	if level := o.GetLevel(); level != InfoLevel {
+		t.Fatalf("Logger.GetLevel(): %s", level.String())
+	}
+}

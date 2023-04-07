@@ -32,7 +32,15 @@ type Logger interface {
 	GetLevel() Level
 
 	// SetLevel sets the current logger level.
+	// When the given log level is invalid, this method does nothing.
 	SetLevel(Level) Logger
+
+	// SetLevelString sets the current logger level by string.
+	SetLevelString(s string) error
+
+	// ForceSetLevelString sets the current logger level by string.
+	// When the given log level string is invalid, this method does nothing.
+	ForceSetLevelString(s string) Logger
 
 	// SetOutput sets the current logger output writer.
 	// If the given writer is nil, os.Stdout is used.
@@ -115,8 +123,30 @@ func (o *logger) GetLevel() Level {
 }
 
 // SetLevel sets the current logger level.
+// When the given log level is invalid, this method does nothing.
 func (o *logger) SetLevel(level Level) Logger {
-	atomic.StoreUint32(&o.core.level, uint32(level))
+	if level.IsValid() {
+		atomic.StoreUint32(&o.core.level, uint32(level))
+	}
+	return o
+}
+
+// SetLevelString sets the current logger level by string.
+func (o *logger) SetLevelString(s string) error {
+	level, err := ParseLevel(s)
+	if err != nil {
+		return err
+	}
+	o.SetLevel(level)
+	return nil
+}
+
+// ForceSetLevelString sets the current logger level by string.
+// When the given log level string is invalid, this method does nothing.
+func (o *logger) ForceSetLevelString(s string) Logger {
+	if level, err := ParseLevel(s); err == nil {
+		o.SetLevel(level)
+	}
 	return o
 }
 
