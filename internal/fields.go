@@ -16,7 +16,9 @@ package internal
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -66,7 +68,7 @@ func StandardiseFieldsForJSONEncoder(src map[string]interface{}) map[string]inte
 		case error:
 			// The json.Marshal will convert some errors into "{}", we need to call
 			// the error.Error() method before JSON encoding.
-			dst[k] = o.Error()
+			dst[k] = errorToString(o)
 		default:
 			dst[k] = v
 		}
@@ -78,14 +80,7 @@ func StandardiseFieldsForJSONEncoder(src map[string]interface{}) map[string]inte
 func FormatFieldsToText(src map[string]interface{}) string {
 	texts := make([]string, 0, len(src))
 	for k, v := range src {
-		switch o := v.(type) {
-		case []byte:
-			texts = append(texts, k+"="+string(o))
-		case fmt.Stringer:
-			texts = append(texts, k+"="+o.String())
-		default:
-			texts = append(texts, k+"="+fmt.Sprint(v))
-		}
+		texts = append(texts, k+"="+ToString(v))
 	}
 	// Ensure that the order of log extension fields is consistent.
 	if len(texts) > 1 {
@@ -97,25 +92,124 @@ func FormatFieldsToText(src map[string]interface{}) string {
 // FormatPairsToFields standardizes the given pairs to fields.
 func FormatPairsToFields(pairs []interface{}) map[string]interface{} {
 	fields := make(map[string]interface{}, len(pairs)/2)
-	var key string
 	for i, j := 0, len(pairs); i < j; i += 2 {
-		switch pair := pairs[i].(type) {
-		case string:
-			key = pair
-		case fmt.Stringer:
-			key = pair.String()
-		default:
-			// We tried converting to a string, but this shouldn't happen, normally, the key
-			// of a key-value pair should be a string.
-			key = fmt.Sprint(pairs[i])
-		}
 		if i+1 < j {
-			fields[key] = pairs[i+1]
+			fields[ToString(pairs[i])] = pairs[i+1]
 		} else {
 			// Can't be the last key-value pair?
 			// We tried setting the value to an empty string, but that shouldn't happen.
-			fields[key] = ""
+			fields[ToString(pairs[i])] = ""
 		}
 	}
 	return fields
+}
+
+var (
+	errorType    = reflect.TypeOf((*error)(nil)).Elem()
+	stringerType = reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
+)
+
+// ToString tries to convert the given variable into a string.
+func ToString(value interface{}) string {
+	if value == nil {
+		return ""
+	}
+	switch v := value.(type) {
+	case string:
+		return v
+	case fmt.Stringer:
+		return stringerToString(v)
+	case int:
+		return strconv.Itoa(v)
+	case int64:
+		return strconv.FormatInt(v, 10)
+	case int32:
+		return strconv.FormatInt(int64(v), 10)
+	case int16:
+		return strconv.FormatInt(int64(v), 10)
+	case int8:
+		return strconv.FormatInt(int64(v), 10)
+	case uint:
+		return strconv.FormatUint(uint64(v), 10)
+	case uint64:
+		return strconv.FormatUint(v, 10)
+	case uint32:
+		return strconv.FormatUint(uint64(v), 10)
+	case uint16:
+		return strconv.FormatUint(uint64(v), 10)
+	case uint8:
+		return strconv.FormatUint(uint64(v), 10)
+	case bool:
+		return strconv.FormatBool(v)
+	case float64:
+		return strconv.FormatFloat(v, 'g', -1, 64)
+	case float32:
+		return strconv.FormatFloat(float64(v), 'g', -1, 32)
+	case []byte:
+		return string(v)
+	case error:
+		return errorToString(v)
+	}
+	// Not a common type? We try to use reflection for fast conversion to string.
+	rv := reflect.ValueOf(value)
+	for k := rv.Kind(); k == reflect.Ptr || k == reflect.Interface; k = rv.Kind() {
+		if rv.IsNil() {
+			return ""
+		}
+		if rv.Type().AssignableTo(errorType) {
+			return errorToString(rv.Interface().(error))
+		}
+		if rv.Type().AssignableTo(stringerType) {
+			return stringerToString(rv.Interface().(fmt.Stringer))
+		}
+		rv = rv.Elem()
+	}
+	switch rv.Kind() {
+	case reflect.String:
+		return rv.String()
+	case reflect.Int64, reflect.Int, reflect.Int32, reflect.Int16, reflect.Int8:
+		return strconv.FormatInt(rv.Int(), 10)
+	case reflect.Uint64, reflect.Uint, reflect.Uint32, reflect.Uint16, reflect.Uint8:
+		return strconv.FormatUint(rv.Uint(), 10)
+	case reflect.Bool:
+		return strconv.FormatBool(rv.Bool())
+	case reflect.Float64:
+		return strconv.FormatFloat(rv.Float(), 'g', -1, 64)
+	case reflect.Float32:
+		return strconv.FormatFloat(rv.Float(), 'g', -1, 32)
+	case reflect.Slice:
+		if rv.Type().Elem().Kind() == reflect.Uint8 {
+			return string(rv.Bytes())
+		}
+	}
+	// Ultimately, we can only hope that this returns the desired string.
+	return fmt.Sprint(value)
+}
+
+// Safely convert the given error to a string.
+func errorToString(err error) (s string) {
+	if err == nil {
+		return
+	}
+	defer func() {
+		if v := recover(); v != nil {
+			s = "!!PANIC(error.Error)"
+		}
+	}()
+	s = err.Error()
+	return
+}
+
+// Safely convert the given fmt.Stringer to a string.
+func stringerToString(sr fmt.Stringer) (s string) {
+	if sr == nil {
+		return
+	}
+	defer func() {
+		if v := recover(); v != nil {
+			s = "!!PANIC(fmt.Stringer.String)"
+		}
+	}()
+	s = sr.String()
+	return
 }

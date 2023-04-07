@@ -97,7 +97,7 @@ type testStringer struct {
 	v string
 }
 
-func (o *testStringer) String() string {
+func (o testStringer) String() string {
 	return o.v
 }
 
@@ -125,6 +125,202 @@ func TestFormatPairsToFields(t *testing.T) {
 		"1":    "test",
 		"test": "test",
 		"bar":  "",
+	}
+	if len(want) != len(got) {
+		t.Fatalf("FormatPairsToFields(): %v", got)
+	}
+	for k, v := range want {
+		// All value is string.
+		if got[k].(string) != v.(string) {
+			t.Fatalf("FormatPairsToFields(): %v", got)
+		}
+	}
+}
+
+func TestToString(t *testing.T) {
+	s := "s"
+	n := 1
+	b := true
+	f := 1.5
+	f32 := float32(1.5)
+	iu64 := uint64(1)
+
+	ps := &s
+	pn := &n
+	pb := &b
+	pf := &f
+	pf32 := &f32
+	piu64 := &iu64
+
+	psr := &testStringer{"s"}
+	psr2 := &psr
+
+	bs := []byte("bs")
+
+	nilError := error(nil)
+	nilSr := fmt.Stringer(nil)
+
+	type aliasInt int
+	type aliasString string
+	type aliasBool bool
+	type aliasError error
+	type aliasStringer fmt.Stringer
+
+	ai := aliasInt(1)
+	as := aliasString("s")
+	ab := aliasBool(true)
+	ae := aliasError(errors.New("err"))
+	asr1 := aliasStringer(&testStringer{"s"})
+	asr2 := aliasStringer(testStringer{"s"})
+
+	nilAe := aliasError(nil)
+	nilAsr := aliasStringer(nil)
+
+	items := []struct {
+		Given interface{}
+		Want  string
+	}{
+		{"s", "s"},
+		{1, "1"}, // int
+		{int8(1), "1"},
+		{int16(1), "1"},
+		{int32(1), "1"},
+		{int64(1), "1"},
+		{uint(1), "1"},
+		{uint8(1), "1"},
+		{uint16(1), "1"},
+		{uint32(1), "1"},
+		{uint64(1), "1"},
+		{uint8(1), "1"},
+		{1.5, "1.5"}, // float64
+		{float32(1.5), "1.5"},
+		{[]byte("b"), "b"},
+		{errors.New("err"), "err"},
+		{error(nil), ""},
+		{nilError, ""},
+		{&nilError, ""},
+		{fmt.Stringer(nil), ""},
+		{nilSr, ""},
+		{&nilSr, ""},
+		{testStringer{"s"}, "s"},
+		{&testStringer{"s"}, "s"},
+		{&psr, "s"},
+		{psr2, "s"},
+		{true, "true"},
+		{ps, "s"},      // *string
+		{pn, "1"},      // *int
+		{pb, "true"},   // *bool
+		{pf, "1.5"},    // *float64
+		{pf32, "1.5"},  // *float32
+		{piu64, "1"},   // *uint64
+		{&ps, "s"},     // **string
+		{&pn, "1"},     // **int
+		{&pb, "true"},  // **bool
+		{&pf, "1.5"},   // **float64
+		{&pf32, "1.5"}, // **float32
+		{&piu64, "1"},  // **uint64
+		{&bs, "bs"},    // *[]byte
+		{[]string{"s", "s"}, fmt.Sprint([]string{"s", "s"})},
+		{nil, ""},
+		{aliasInt(1), "1"},
+		{aliasString("s"), "s"},
+		{aliasBool(true), "true"},
+		{aliasError(nil), ""},
+		{aliasError(errors.New("err")), "err"},
+		{aliasStringer(nil), ""},
+		{aliasStringer(testStringer{"s"}), "s"},
+		{aliasStringer(&testStringer{"s"}), "s"},
+		{&ai, "1"},
+		{&as, "s"},
+		{&ab, "true"},
+		{&ae, "err"},
+		{&asr1, "s"},
+		{&asr2, "s"},
+		{&nilAe, ""},
+		{&nilAsr, ""},
+	}
+
+	for i, item := range items {
+		if got := ToString(item.Given); got != item.Want {
+			t.Fatalf("ToString(): [%d] want %q got %q", i, item.Want, got)
+		}
+	}
+}
+
+type testPanicError struct{}
+
+func (testPanicError) Error() string {
+	panic("testPanicError")
+}
+
+type testPanicStringer struct{}
+
+func (testPanicStringer) String() string {
+	panic("testPanicStringer")
+}
+
+func TestStandardiseFieldsForJSONEncoder_WithPanicError(t *testing.T) {
+	src := map[string]interface{}{
+		"err": new(testPanicError),
+	}
+	dst := StandardiseFieldsForJSONEncoder(src)
+
+	bs, err := json.Marshal(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"err":"!!PANIC(error.Error)"}`
+	got := string(bs)
+	if want != got {
+		t.Fatalf("StandardiseFieldsForJSONEncoder(): want %q, got %q", want, got)
+	}
+}
+
+func TestFormatFieldsToText_WithPanicError(t *testing.T) {
+	want := `err=!!PANIC(error.Error)`
+	got := FormatFieldsToText(map[string]interface{}{
+		"err": new(testPanicError),
+	})
+	if want != got {
+		t.Fatalf("FormatFieldsToText(): want %q, got %q", want, got)
+	}
+}
+
+func TestFormatFieldsToText_WithPanicStringer(t *testing.T) {
+	want := `stringer=!!PANIC(fmt.Stringer.String)`
+	got := FormatFieldsToText(map[string]interface{}{
+		"stringer": new(testPanicStringer),
+	})
+	if want != got {
+		t.Fatalf("FormatFieldsToText(): want %q, got %q", want, got)
+	}
+}
+
+func TestFormatPairsToFields_WithPanicError(t *testing.T) {
+	got := FormatPairsToFields([]interface{}{
+		new(testPanicError), "test",
+	})
+	want := map[string]interface{}{
+		"!!PANIC(error.Error)": "test",
+	}
+	if len(want) != len(got) {
+		t.Fatalf("FormatPairsToFields(): %v", got)
+	}
+	for k, v := range want {
+		// All value is string.
+		if got[k].(string) != v.(string) {
+			t.Fatalf("FormatPairsToFields(): %v", got)
+		}
+	}
+}
+
+func TestFormatPairsToFields_WithPanicStringer(t *testing.T) {
+	got := FormatPairsToFields([]interface{}{
+		new(testPanicStringer), "test",
+	})
+	want := map[string]interface{}{
+		"!!PANIC(fmt.Stringer.String)": "test",
 	}
 	if len(want) != len(got) {
 		t.Fatalf("FormatPairsToFields(): %v", got)
