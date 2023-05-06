@@ -1,5 +1,5 @@
 # This workflow will test this project.
-name: Github Action CI
+name: CI
 on:
   push:
     branches: [ "master" ]
