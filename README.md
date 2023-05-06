@@ -108,6 +108,8 @@ we can use this feature to add differentiated fields to different modules.
     SubLog1 := BaseLog.WithField("key", value)
     SubLog2 := BaseLog.WithFields(map[string]interface{}{/* multiple fields */})
     SubLog3 := BaseLog.WithContext(ctx)
+    // Field key-value pairs are also supported.
+    SubLog4 := BaseLog.WithFieldPairs("key1", value1, "key2", value2, /* More ... */)
     /* More ... */
 
     // Add a logger for the submodule, the logs recorded by the submodule all have
@@ -132,6 +134,14 @@ The application is not a modular design? No additional properties?
 
     log.Info("Step 1 is done!") // Log message: "Prefix: Step 1 is done!"
     log.Info("Step 2 is done!") // Log message: "Prefix: Step 2 is done!"
+```
+
+Need to determine if a log level is visible before logging?
+
+```go
+    if Log.IsLevelEnabled(Level) { /* Print log */ }
+    // or
+    if Log.IsDebugLevelEnabled() { /* Print debug log */ }
 ```
 
 ### Quickly Locate Bugs ###
