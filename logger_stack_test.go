@@ -16,6 +16,7 @@ package logger
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -30,13 +31,15 @@ func TestLog_WithStack(t *testing.T) {
 		return nil
 	}))
 
-	o.WithStack().WithStack().Info("stack")
+	l := o.WithStack().WithStack()
+	l.Info("stack")
 
-	// goroutine 4 [running]:
-	// github.com/edoger/zkits-logger.TestLog_WithStack(0xc0001421a0) At ... /logger_stack_test.go:33 +0x317
-	// testing.tRunner(0xc0001421a0, 0x116cd98) At ... /src/testing/testing.go:1439 +0x102
-	// created by testing.(*T).Run At ... /src/testing/testing.go:1486 +0x35f
+	// goroutine 18 [running]:
+	// github.com/edoger/zkits-logger.TestLog_WithStack(0xc00010a820) At ... logger_stack_test.go:35 +0x323
+	// testing.tRunner(0xc00010a820, 0x118a118) At ... testing.go:1576 +0x10b
+	// created by testing.(*T).Run At ... testing.go:1629 +0x3ea
 	if s := w.String(); strings.TrimSpace(s) == "" {
 		t.Fatal("Log.WithStack(): no stack data")
 	}
+	fmt.Println(w.String())
 }
