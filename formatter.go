@@ -38,3 +38,12 @@ type FormatterFunc func(Entity, *bytes.Buffer) error
 func (f FormatterFunc) Format(e Entity, b *bytes.Buffer) error {
 	return f(e, b)
 }
+
+// UnimplementedFormatter defines an empty, unimplemented log formatter.
+// This is usually used to bypass log formatting and implement custom loggers with interceptors.
+type UnimplementedFormatter struct{}
+
+// Format does nothing here and always returns a nil error.
+func (*UnimplementedFormatter) Format(_ Entity, _ *bytes.Buffer) error {
+	return nil
+}
