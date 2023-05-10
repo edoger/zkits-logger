@@ -219,6 +219,7 @@ type core struct {
 	levelWriter   map[Level]io.Writer
 	pool          sync.Pool
 	hooks         HookBag
+	enableHooks   bool
 	timeFormat    string
 	nowFunc       func() time.Time
 	exitFunc      func(int)
@@ -239,6 +240,7 @@ func newCore(name string) *core {
 		levelWriter:   make(map[Level]io.Writer),
 		pool:          sync.Pool{New: func() interface{} { return new(logEntity) }},
 		hooks:         NewHookBag(),
+		enableHooks:   true,
 		timeFormat:    internal.DefaultTimeFormat,
 		nowFunc:       internal.DefaultNowFunc,
 		exitFunc:      internal.DefaultExitFunc,
@@ -402,9 +404,11 @@ func (o *log) record(level Level, message string) {
 		// When the format log fails, we terminate the logging and report the error.
 		internal.EchoError("(%s) Failed to format log: %s", o.core.name, err)
 	} else {
-		err = o.core.hooks.Fire(entity)
-		if err != nil {
-			internal.EchoError("(%s) Failed to fire log hook: %s", o.core.name, err)
+		if o.core.enableHooks {
+			err = o.core.hooks.Fire(entity)
+			if err != nil {
+				internal.EchoError("(%s) Failed to fire log hook: %s", o.core.name, err)
+			}
 		}
 		err = o.write(entity)
 		if err != nil {

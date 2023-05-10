@@ -99,6 +99,9 @@ type Logger interface {
 	// AddHookFunc adds the given log hook function to the current logger.
 	AddHookFunc([]Level, func(Summary) error) Logger
 
+	// EnableHook enables or disables the log hook.
+	EnableHook(bool) Logger
+
 	// AsLog converts current Logger to Log instances, which is unidirectional.
 	AsLog() Log
 
@@ -285,6 +288,12 @@ func (o *logger) AddHook(hook Hook) Logger {
 // AddHookFunc adds the given log hook function to the current logger.
 func (o *logger) AddHookFunc(levels []Level, hook func(Summary) error) Logger {
 	return o.AddHook(NewHookFromFunc(levels, hook))
+}
+
+// EnableHook enables or disables the log hook.
+func (o *logger) EnableHook(ok bool) Logger {
+	o.core.enableHooks = ok
+	return o
 }
 
 // AsLog converts current Logger to Log instances, which is unidirectional.
