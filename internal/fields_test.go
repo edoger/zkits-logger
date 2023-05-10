@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"testing"
 )
 
@@ -90,6 +91,67 @@ func TestStandardiseFieldsForJSONEncoder(t *testing.T) {
 	got := string(bs)
 	if want != got {
 		t.Fatalf("StandardiseFieldsForJSONEncoder(): want %q, got %q", want, got)
+	}
+}
+
+type testJSONError struct {
+	Text string
+}
+
+func (e *testJSONError) Error() string {
+	return "err." + e.Text
+}
+
+func (e *testJSONError) MarshalJSON() ([]byte, error) {
+	return []byte(strconv.Quote("JSON." + e.Text)), nil
+}
+
+type testTextError struct {
+	Text string
+}
+
+func (e *testTextError) Error() string {
+	return "err." + e.Text
+}
+
+func (e *testTextError) MarshalText() (text []byte, err error) {
+	return []byte("TEXT." + e.Text), nil
+}
+
+type testJSONTextError struct {
+	Text string
+}
+
+func (e *testJSONTextError) Error() string {
+	return "err." + e.Text
+}
+
+func (e *testJSONTextError) MarshalJSON() ([]byte, error) {
+	return []byte(strconv.Quote("JSON." + e.Text)), nil
+}
+
+func (e *testJSONTextError) MarshalText() (text []byte, err error) {
+	return []byte("TEXT." + e.Text), nil
+}
+
+func TestStandardiseFieldsForJSONEncoder_JSONMarshal(t *testing.T) {
+	items := []struct {
+		Given error
+		Want  string
+	}{
+		{errors.New("test"), "{}"},
+		{&testJSONError{"test"}, `"JSON.test"`},
+		{&testTextError{"test"}, `"TEXT.test"`},
+		{&testJSONTextError{"test"}, `"JSON.test"`},
+	}
+	for i, item := range items {
+		data, err := json.Marshal(item.Given)
+		if err != nil {
+			t.Fatalf("[%d] json.Marshal() error: %s", i+1, err)
+		}
+		if string(data) != item.Want {
+			t.Fatalf("[%d] json.Marshal(): %s", i+1, string(data))
+		}
 	}
 }
 
