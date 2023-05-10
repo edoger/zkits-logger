@@ -1,6 +1,6 @@
 # ZKits Logger Library #
 
-[![Golang Version](https://img.shields.io/badge/golang-1.13+-orange)](https://github.com/edoger/zkits-logger)
+[![Golang Version](https://img.shields.io/badge/golang-1.18+-orange)](https://github.com/edoger/zkits-logger)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 [![Build Status](https://github.com/edoger/zkits-logger/workflows/CI/badge.svg?branch=master)](https://github.com/edoger/zkits-logger/actions/workflows/ci.yml)
 [![Build status](https://ci.appveyor.com/api/projects/status/xpbbppv3aui8n3fb/branch/master?svg=true)](https://ci.appveyor.com/project/edoger56924/zkits-logger/branch/master)
