@@ -38,15 +38,27 @@ type Entity interface {
 	// Message returns the log message.
 	Message() string
 
+	// HasFields determines whether the log contains fields.
+	HasFields() bool
+
 	// Fields returns the log fields.
 	Fields() map[string]interface{}
+
+	// HasContext determines whether the log contains a context.
+	HasContext() bool
 
 	// Context returns the log context.
 	Context() context.Context
 
+	// HasCaller determines whether the log contains caller information.
+	HasCaller() bool
+
 	// Caller returns the log caller.
 	// If it is not enabled, an empty string is always returned.
 	Caller() string
+
+	// HasStack determines whether the log contains call stack information.
+	HasStack() bool
 
 	// Stack returns the call stack information at the logging location.
 	// Returns nil if not enabled.
@@ -119,9 +131,19 @@ func (o *logEntity) Message() string {
 	return o.message
 }
 
+// HasFields determines whether the log contains fields.
+func (o *logEntity) HasFields() bool {
+	return len(o.fields) > 0
+}
+
 // Fields returns the log fields.
 func (o *logEntity) Fields() map[string]interface{} {
 	return o.fields
+}
+
+// HasContext determines whether the log contains a context.
+func (o *logEntity) HasContext() bool {
+	return o.ctx != nil
 }
 
 // Context returns the log context.
@@ -132,10 +154,20 @@ func (o *logEntity) Context() context.Context {
 	return o.ctx
 }
 
+// HasCaller determines whether the log contains caller information.
+func (o *logEntity) HasCaller() bool {
+	return o.caller != ""
+}
+
 // Caller returns the log caller.
 // If it is not enabled, an empty string is always returned.
 func (o *logEntity) Caller() string {
 	return o.caller
+}
+
+// HasStack determines whether the log contains call stack information.
+func (o *logEntity) HasStack() bool {
+	return len(o.stack) > 0
 }
 
 // Stack returns the call stack information at the logging location.
