@@ -212,37 +212,39 @@ type Log interface {
 // The core type defines the collection of shared attributes within the log,
 // and each independent Logger shares the same core instance.
 type core struct {
-	name        string
-	level       uint32
-	formatter   Formatter
-	writer      io.Writer
-	levelWriter map[Level]io.Writer
-	pool        sync.Pool
-	hooks       HookBag
-	timeFormat  string
-	nowFunc     func() time.Time
-	exitFunc    func(int)
-	panicFunc   func(string)
-	caller      *internal.CallerReporter
-	levelCaller map[Level]*internal.CallerReporter
-	interceptor func(Summary, io.Writer) (int, error)
+	name          string
+	level         uint32
+	formatter     Formatter
+	writer        io.Writer
+	levelWriter   map[Level]io.Writer
+	pool          sync.Pool
+	hooks         HookBag
+	timeFormat    string
+	nowFunc       func() time.Time
+	exitFunc      func(int)
+	panicFunc     func(string)
+	caller        *internal.CallerReporter
+	levelCaller   map[Level]*internal.CallerReporter
+	interceptor   func(Summary, io.Writer) (int, error)
+	stackPrefixes []string
 }
 
 // Create a new core instance and bind the logger name.
 func newCore(name string) *core {
 	return &core{
-		name:        name,
-		level:       uint32(TraceLevel),
-		formatter:   DefaultJSONFormatter(),
-		writer:      os.Stdout,
-		levelWriter: make(map[Level]io.Writer),
-		pool:        sync.Pool{New: func() interface{} { return new(logEntity) }},
-		hooks:       NewHookBag(),
-		timeFormat:  internal.DefaultTimeFormat,
-		nowFunc:     internal.DefaultNowFunc,
-		exitFunc:    internal.DefaultExitFunc,
-		panicFunc:   internal.DefaultPanicFunc,
-		levelCaller: make(map[Level]*internal.CallerReporter),
+		name:          name,
+		level:         uint32(TraceLevel),
+		formatter:     DefaultJSONFormatter(),
+		writer:        os.Stdout,
+		levelWriter:   make(map[Level]io.Writer),
+		pool:          sync.Pool{New: func() interface{} { return new(logEntity) }},
+		hooks:         NewHookBag(),
+		timeFormat:    internal.DefaultTimeFormat,
+		nowFunc:       internal.DefaultNowFunc,
+		exitFunc:      internal.DefaultExitFunc,
+		panicFunc:     internal.DefaultPanicFunc,
+		levelCaller:   make(map[Level]*internal.CallerReporter),
+		stackPrefixes: internal.KnownStackPrefixes,
 	}
 }
 
@@ -393,7 +395,7 @@ func (o *log) record(level Level, message string) {
 	defer o.core.putEntity(entity)
 
 	if o.stack {
-		entity.stack = internal.GetStack()
+		entity.stack = internal.GetStack(o.core.stackPrefixes)
 	}
 
 	if err := o.core.formatter.Format(entity, &entity.buffer); err != nil {

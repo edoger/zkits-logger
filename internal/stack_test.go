@@ -23,7 +23,7 @@ import (
 
 func TestGetStack(t *testing.T) {
 	fn1 := func() []string {
-		return GetStack(KnownStackPrefixes...)
+		return GetStack(KnownStackPrefixes)
 	}
 	fn2 := func() []string {
 		return fn1()

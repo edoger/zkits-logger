@@ -57,7 +57,7 @@ func FormatKnownStackPrefixes(prefixes ...string) []string {
 // GetStack returns the current coroutine call stack information.
 // This method call is very expensive, we format the stack information returned by the system
 // and exclude the internal call stack information (they are always unchanged).
-func GetStack(prefixes ...string) (r []string) {
+func GetStack(prefixes []string) (r []string) {
 	// We use a 32KB buffer to read the call stack information, which is sufficient in most
 	// cases, but it is not excluded that the size of the stack information exceeds it.
 	// The reason why we do not use a larger buffer is because in almost In all scenarios,

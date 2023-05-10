@@ -104,6 +104,9 @@ type Logger interface {
 
 	// AsStandardLogger converts the current logger to a standard library logger instance.
 	AsStandardLogger() *stdlog.Logger
+
+	// SetStackPrefixFilter sets the call stack prefix filter rules.
+	SetStackPrefixFilter(...string) Logger
 }
 
 // New creates a new Logger instance.
@@ -292,4 +295,10 @@ func (o *logger) AsLog() Log {
 // AsStandardLogger converts the current logger to a standard library logger instance.
 func (o *logger) AsStandardLogger() *stdlog.Logger {
 	return stdlog.New(NewLevelWriter(InfoLevel, o.AsLog()), "", 0)
+}
+
+// SetStackPrefixFilter sets the call stack prefix filter rules.
+func (o *logger) SetStackPrefixFilter(prefixes ...string) Logger {
+	o.core.stackPrefixes = internal.FormatKnownStackPrefixes(prefixes...)
+	return o
 }
