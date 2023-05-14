@@ -43,3 +43,33 @@ func TestLog_WithStack(t *testing.T) {
 	}
 	fmt.Println(w.String())
 }
+
+func TestLogger_SetStackPrefixFilter(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+
+	prefix := "github.com/edoger/zkits-logger.TestLogger_SetStackPrefixFilter"
+	if o.SetStackPrefixFilter(prefix) == nil {
+		t.Fatal("Logger.SetStackPrefixFilter(): return nil.")
+	}
+	o.SetFormatter(FormatterFunc(func(e Entity, b *bytes.Buffer) error {
+		b.WriteString(strings.Join(e.Stack(), "\n"))
+		return nil
+	}))
+
+	l := o.WithStack().WithStack()
+	l.Info("stack")
+
+	// goroutine 18 [running]:
+	// testing.tRunner(0xc00010a820, 0x1193d40) At /usr/local/opt/go/libexec/src/testing/testing.go:1576 +0x10b
+	// created by testing.(*T).Run At /usr/local/opt/go/libexec/src/testing/testing.go:1629 +0x3ea
+	if s := w.String(); strings.TrimSpace(s) == "" {
+		t.Fatal("Logger.SetStackPrefixFilter(): no stack data")
+	}
+	if s := w.String(); strings.Contains(s, prefix) {
+		t.Fatalf("Logger.SetStackPrefixFilter(): Contains: %s", prefix)
+	}
+	fmt.Println(w.String())
+}
