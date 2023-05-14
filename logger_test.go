@@ -923,3 +923,26 @@ func TestLogger_WithFieldPairs(t *testing.T) {
 		t.Fatalf("Fields: %s", got)
 	}
 }
+
+func TestLogger_EnableHook(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+
+	if o.EnableHook(false) == nil {
+		t.Fatal("Logger.EnableHook(): return nil.")
+	}
+
+	var msg string
+	o.AddHookFunc(GetAllLevels(), func(su Summary) error {
+		msg = su.Message()
+		return nil
+	})
+
+	o.Info("test")
+
+	if msg != "" {
+		t.Fatal(msg)
+	}
+}
