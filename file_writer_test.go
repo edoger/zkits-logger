@@ -158,3 +158,25 @@ func TestFileWriterWithExistFile(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestFileWriterWithExistBigFile(t *testing.T) {
+	dir := t.TempDir()
+	name := filepath.Join(dir, "test.log")
+	data := bytes.Repeat([]byte("1"), 2000)
+	if err := os.WriteFile(name, data, 0666); err != nil {
+		t.Fatal(err)
+	}
+	w := MustNewFileWriter(name, 1024, 0)
+
+	if matches, err := filepath.Glob(filepath.Join(dir, "test-*.log")); err != nil {
+		t.Fatal(err)
+	} else {
+		if len(matches) != 1 {
+			t.Fatalf("FileWriter.Write(): %v", matches)
+		}
+	}
+
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
