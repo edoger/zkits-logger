@@ -59,14 +59,26 @@ func TestLogEntityAndSummary(t *testing.T) {
 	if got := o.Message(); got != "foo" {
 		t.Fatalf("Summary.Level(): %s", got)
 	}
+	if got := o.HasFields(); got != true {
+		t.Fatalf("Summary.HasFields(): %v", got)
+	}
 	if got := o.Fields(); fmt.Sprint(got) != fmt.Sprint(map[string]interface{}{"key": "foo"}) {
 		t.Fatalf("Summary.Fields(): %v", got)
+	}
+	if got := o.HasContext(); got == true {
+		t.Fatalf("Summary.HasContext(): %v", got)
 	}
 	if got := o.Context(); got == nil {
 		t.Fatal("Summary.Context(): nil")
 	}
+	if got := o.HasCaller(); got == false {
+		t.Fatalf("Summary.HasCaller(): %v", got)
+	}
 	if got := o.Caller(); got != "foo.go:1" {
 		t.Fatalf("Summary.Caller(): %s", got)
+	}
+	if got := o.HasStack(); got == false {
+		t.Fatalf("Summary.HasStack(): %v", got)
 	}
 	if got := o.Stack(); len(got) != 1 || got[0] != "stack" {
 		t.Fatalf("Summary.Stack(): %s", got)
