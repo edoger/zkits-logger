@@ -15,25 +15,15 @@
 package logger
 
 import (
-	"io/ioutil"
+	"bytes"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"testing"
 	"time"
 )
 
 func TestNewFileWriter(t *testing.T) {
-	dir := filepath.Join(os.TempDir(), strconv.FormatInt(time.Now().UnixNano(), 10), "TestNewFileWriter")
-	if err := os.MkdirAll(dir, 0766); err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	dir := t.TempDir()
 	name := filepath.Join(dir, "test.log")
 
 	if w, err := NewFileWriter(name, 1024, 0); err != nil {
@@ -51,16 +41,16 @@ func TestNewFileWriter(t *testing.T) {
 	}
 }
 
-func TestMustNewFileWriter(t *testing.T) {
-	dir := filepath.Join(os.TempDir(), strconv.FormatInt(time.Now().UnixNano(), 10), "TestMustNewFileWriter")
-	if err := os.MkdirAll(dir, 0766); err != nil {
-		t.Fatal(err)
+func TestNewFileWriter_Error(t *testing.T) {
+	dir := t.TempDir()
+	// A directory cannot be used as a log file name.
+	if _, err := NewFileWriter(dir, 1024, 0); err == nil {
+		t.Fatal("NewFileWriter(): nil error")
 	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
+}
+
+func TestMustNewFileWriter(t *testing.T) {
+	dir := t.TempDir()
 	name := filepath.Join(dir, "test.log")
 	if w := MustNewFileWriter(name, 1024, 0); w == nil {
 		t.Fatal("MustNewFileWriter(): nil")
@@ -69,94 +59,102 @@ func TestMustNewFileWriter(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+}
 
+func TestMustNewFileWriter_Panic(t *testing.T) {
+	dir := t.TempDir()
 	defer func() {
 		if v := recover(); v == nil {
 			t.Fatal("MustNewFileWriter(): not panic")
 		}
 	}()
+	// A directory cannot be used as a log file name.
 	MustNewFileWriter(dir, 1024, 0)
 }
 
 func TestFileWriter(t *testing.T) {
-	dir := filepath.Join(os.TempDir(), strconv.FormatInt(time.Now().UnixNano(), 10), "TestFileWriter")
-	if err := os.MkdirAll(dir, 0766); err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	dir := t.TempDir()
 	name := filepath.Join(dir, "test.log")
 	w := MustNewFileWriter(name, 1024, 0)
-	defer func() {
-		if err := w.Close(); err != nil {
-			t.Fatal(err)
-		}
-	}()
 
-	data := strings.Repeat("1", 1024)
-	if n, err := w.Write([]byte(data)); err != nil {
+	data := bytes.Repeat([]byte("1"), 1024)
+	if n, err := w.Write(data); err != nil {
 		t.Fatal(err)
 	} else {
-		if n != 1024 {
+		if n != len(data) {
 			t.Fatalf("FileWriter.Write(): %d", n)
 		}
 	}
-	if matches, err := filepath.Glob(name + ".*"); err != nil {
+
+	if matches, err := filepath.Glob(filepath.Join(dir, "test-*.log")); err != nil {
 		t.Fatal(err)
 	} else {
-		if len(matches) == 0 {
-			t.Fatal("FileWriter.Write(): not rename")
+		if len(matches) != 1 {
+			t.Fatalf("FileWriter.Write(): %v", matches)
 		}
-		got, err := ioutil.ReadFile(matches[0])
-		if err != nil {
-			t.Fatal(err)
-		}
-		if string(got) != data {
-			t.Fatalf("FileWriter.Write(): got %s", string(got))
-		}
+	}
+
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
 	}
 }
 
 func TestFileWriterWithBackup(t *testing.T) {
-	dir := filepath.Join(os.TempDir(), strconv.FormatInt(time.Now().UnixNano(), 10), "TestFileWriterWithBackup")
-	if err := os.MkdirAll(dir, 0766); err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	dir := t.TempDir()
 	name := filepath.Join(dir, "test.log")
 	w := MustNewFileWriter(name, 1000, 2)
-	defer func() {
-		if err := w.Close(); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	data := strings.Repeat("1", 1024)
+
+	data := bytes.Repeat([]byte("1"), 1024)
 	for i := 0; i < 3; i++ {
-		if n, err := w.Write([]byte(data)); err != nil {
+		if n, err := w.Write(data); err != nil {
 			t.Fatal(err)
 		} else {
-			if n != 1024 {
+			if n != len(data) {
 				t.Fatalf("FileWriter.Write(): %d", n)
 			}
 		}
 	}
-	// The file system takes some time.
-	time.Sleep(time.Second)
-	if matches, err := filepath.Glob(name + ".*"); err != nil {
+	// Delete is asynchronous, we have to wait for system.
+	time.Sleep(time.Second * 3)
+	if matches, err := filepath.Glob(filepath.Join(dir, "test-*.log")); err != nil {
 		t.Fatal(err)
 	} else {
-		if len(matches) == 0 {
-			t.Fatal("FileWriter.Write(): not rename")
-		}
 		if len(matches) != 2 {
-			t.Fatalf("FileWriter.Write(): not clean up: %v", matches)
+			t.Fatalf("FileWriter.Write(): %v", matches)
 		}
+	}
+
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestFileWriterWithExistFile(t *testing.T) {
+	dir := t.TempDir()
+	name := filepath.Join(dir, "test.log")
+	if err := os.WriteFile(name, []byte("test"), 0666); err != nil {
+		t.Fatal(err)
+	}
+	w := MustNewFileWriter(name, 1024, 0)
+
+	data := bytes.Repeat([]byte("1"), 1020)
+	if n, err := w.Write(data); err != nil {
+		t.Fatal(err)
+	} else {
+		if n != len(data) {
+			t.Fatalf("FileWriter.Write(): %d", n)
+		}
+	}
+
+	if matches, err := filepath.Glob(filepath.Join(dir, "test-*.log")); err != nil {
+		t.Fatal(err)
+	} else {
+		if len(matches) != 1 {
+			t.Fatalf("FileWriter.Write(): %v", matches)
+		}
+	}
+
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
 	}
 }

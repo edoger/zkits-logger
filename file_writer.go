@@ -15,16 +15,21 @@
 package logger
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
+	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/edoger/zkits-logger/internal"
 )
+
+const dirPerm os.FileMode = 0766
+const filePerm os.FileMode = 0666
+const fileFlag = os.O_WRONLY | os.O_CREATE | os.O_APPEND
+const backupTimeFormat = "2006-01-02T15:04:05.000"
 
 // NewFileWriter creates and returns an io.WriteCloser instance from the given path.
 // The max parameter is used to limit the maximum size of the log file, if it is 0, the
@@ -39,27 +44,9 @@ func NewFileWriter(name string, max, backup uint32) (io.WriteCloser, error) {
 	} else {
 		name = abs
 	}
-	// Before opening the log file, make sure that the directory must exist.
-	// This requires the user who runs the program to have the authority to create the log
-	// file directory.
-	if err := os.MkdirAll(filepath.Dir(name), 0766); err != nil {
+	w := &fileWriter{path: name, max: max, backup: backup, clear: make(chan struct{}, 1)}
+	if err := w.open(); err != nil {
 		return nil, err
-	}
-	w := &fileWriter{name: name, max: max, backup: backup}
-	if fd, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666); err != nil {
-		return nil, err
-	} else {
-		w.fd = fd
-	}
-	if max > 0 {
-		// If the log file size is limited, then we need to determine the size of the
-		// content in the current log file so that we can rotate the log file correctly.
-		if i, err := w.fd.Stat(); err != nil {
-			_ = w.fd.Close()
-			return nil, err
-		} else {
-			w.size = uint32(i.Size())
-		}
 	}
 	return w, nil
 }
@@ -75,100 +62,176 @@ func MustNewFileWriter(name string, max, backup uint32) io.WriteCloser {
 
 // The built-in log file writer.
 type fileWriter struct {
-	name   string
+	mu     sync.Mutex
+	file   *os.File
+	path   string
+	size   uint32 // The current log file size.
 	max    uint32 // The maximum size of the log file.
 	backup uint32 // The maximum number of backup log files.
-	size   uint32 // The current log file size.
-	mu     sync.RWMutex
-	fd     *os.File
+	once   sync.Once
+	clear  chan struct{}
 }
 
 // Write is an implementation of the io.WriteCloser interface, used to write a single
 // log data to a file.
 func (w *fileWriter) Write(b []byte) (n int, err error) {
-	w.mu.RLock()
-	n, err = w.fd.Write(b)
-	w.mu.RUnlock()
-	// If the size of the log file is limited, we use write first and then rotate mode to
-	// ensure write efficiency as much as possible, but this leads to the fact that the log
-	// file writes some extra parts in the rotation gap when the log volume is very large.
-	// For log data, the size of the log file that is finally retained will be larger than
-	// the limited size. However, I think that higher log writing efficiency is more valuable
-	// than more precise log file size. Therefore, if you really need a very strict log file
-	// size, then it is recommended to slightly lower the limit value to ensure that the
-	// massive log will not break the limited size, in general, I think this is a small problem,
-	// and I don't want to waste time here.
-	// In addition, if the log rotation fails, we will continue to write to the original log
-	// file, but we will continue to try log rotation until it succeeds.
-	if n > 0 && w.max > 0 && atomic.AddUint32(&w.size, uint32(n)) >= w.max {
-		w.swap()
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.file == nil {
+		err = w.open()
+		if err != nil {
+			return
+		}
+	}
+	n, err = w.file.Write(b)
+	if w.max > 0 {
+		w.size += uint32(n)
+		if w.size >= w.max {
+			w.rotate()
+		}
 	}
 	return
 }
 
-// Rotate the current log file.
-// At the same time trigger the backup log file cleanup (if needed).
-func (w *fileWriter) swap() {
+// Close is an implementation of the io.WriteCloser interface.
+func (w *fileWriter) Close() (err error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if atomic.LoadUint32(&w.size) < w.max {
-		return
+	if w.file != nil {
+		defer func() { w.file, w.size = nil, 0 }()
+		err = w.file.Sync()
+		if err2 := w.file.Close(); err == nil {
+			err = err2
+		}
 	}
-	// We need to make sure that the log file is written to disk before closing the file.
-	if err := w.fd.Sync(); err != nil {
-		internal.EchoError("Failed to sync log file %s: %s.", w.name, err)
-	}
-	// On the windows platform, the file must be closed before renaming the file.
-	// We need to ignore the error that the file is closed.
-	if err := w.fd.Close(); err != nil {
-		internal.EchoError("Failed to close log file %s: %s.", w.name, err)
-	}
-	// Accurate to the nanosecond, it maximizes the assurance that file names are not duplicated.
-	suffix := time.Now().Format("20060102150405.000000000")
-	if err := os.Rename(w.name, w.name+"."+suffix); err != nil {
-		internal.EchoError("Failed to rename log file %s to %s.%s: %s.", w.name, w.name, suffix, err)
-	}
-	fd, err := os.OpenFile(w.name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	return
+}
+
+func (w *fileWriter) open() error {
+	dir, name, ext := splitFilePath(w.path)
+	err := os.MkdirAll(dir, dirPerm)
 	if err != nil {
-		internal.EchoError("Failed to open log file %s: %s.", w.name, err)
-		return
+		return err
 	}
-	w.fd = fd
-	atomic.StoreUint32(&w.size, 0)
-	if w.backup > 0 {
-		// Try cleaning up old backup log files.
-		// If the number of previous backup files is very large, then this may be very
-		// time-consuming, so we use asynchronous methods to remove obsolete log backups.
-		go w.clearBackups()
+	var info os.FileInfo
+	var file *os.File
+	if info, err = os.Stat(w.path); err != nil {
+		if os.IsNotExist(err) {
+			file, err = os.OpenFile(w.path, fileFlag, filePerm)
+			if err != nil {
+				return err
+			}
+			w.file, w.size = file, 0
+			return nil
+		}
+		return err
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("path %s exists, but not is regular file", w.path)
+	}
+	if w.max > 0 && uint32(info.Size()) > w.max {
+		if err = os.Rename(w.path, newBackupFileName(dir, name, ext)); err != nil {
+			return err
+		}
+		w.clean()
+	}
+	if file, err = os.OpenFile(w.path, fileFlag, filePerm); err != nil {
+		return err
+	}
+	if info, err = file.Stat(); err != nil {
+		_ = file.Close()
+		return err
+	}
+	w.file = file
+	w.size = uint32(info.Size())
+	return nil
+}
+
+func (w *fileWriter) clean() {
+	w.once.Do(w.sweeper)
+	select {
+	case w.clear <- struct{}{}:
+	default:
 	}
 }
 
-// Clean up log backup files, if necessary.
-// This method ignores any errors generated by cleaning up the backup log file, and all error
-// messages will be redirected to standard error.
-func (w *fileWriter) clearBackups() {
-	matches, err := filepath.Glob(w.name + ".*")
-	if err != nil {
-		internal.EchoError("Failed to search log backup file %s.*: %s.", w.name, err)
-		return
+func (w *fileWriter) rotate() {
+	if err := w.file.Sync(); err != nil {
+		internal.EchoError("Failed to sync %s: %s.", w.path, err)
 	}
-	if n := uint32(len(matches)); n > w.backup {
-		// Because we rename log files with timestamps, the oldest log file name is always
-		// at the beginning of the slice.
-		sort.Strings(matches)
-		for i, j := uint32(0), n-w.backup; i < j; i++ {
-			if err = os.Remove(matches[i]); err != nil {
-				internal.EchoError("Failed to remove log backup file %s: %s.", matches[i], err)
+	if err := w.file.Close(); err != nil {
+		internal.EchoError("Failed to close %s: %s.", w.path, err)
+	}
+	w.file, w.size = nil, 0
+	dir, name, ext := splitFilePath(w.path)
+	if err := os.Rename(w.path, newBackupFileName(dir, name, ext)); err != nil {
+		internal.EchoError("Failed to rename %s: %s.", w.path, err)
+	}
+	w.clean()
+}
+
+func (w *fileWriter) sweeper() {
+	go func() {
+		for {
+			<-w.clear
+			dir, name, ext := splitFilePath(w.path)
+			if items, err := os.ReadDir(dir); err == nil {
+				if len(items) == 0 {
+					continue
+				}
+				base, files := filepath.Base(w.path), make([]string, 0)
+				for i, j := 0, len(items); i < j; i++ {
+					if items[i].Type().IsRegular() && isBackupFileName(items[i].Name(), base, name+"-", ext) {
+						files = append(files, filepath.Join(dir, items[i].Name()))
+					}
+				}
+				if n := uint32(len(files)); n > w.backup {
+					removeFiles(files[:n-w.backup])
+				}
+			} else {
+				internal.EchoError("Call os.ReadDir() with dir %s failed: %s.", dir, err)
 			}
+		}
+	}()
+}
+
+// Delete the given list of files.
+func removeFiles(files []string) {
+	for i, j := 0, len(files); i < j; i++ {
+		if err := os.Remove(files[i]); err != nil && !os.IsNotExist(err) {
+			internal.EchoError("Failed to remove %s: %s.", files[i], err)
 		}
 	}
 }
 
-// Close is an implementation of the io.WriteCloser interface.
-// This method closes the open file descriptor, but keeps the reference pointer to it.
-func (w *fileWriter) Close() (err error) {
-	w.mu.RLock()
-	err = w.fd.Close()
-	w.mu.RUnlock()
+// Split the basic metadata for the given path.
+func splitFilePath(path string) (dir, name, ext string) {
+	base := filepath.Base(path)
+	ext = filepath.Ext(base)
+	dir, name = filepath.Dir(path), strings.TrimSuffix(base, ext)
 	return
+}
+
+// Create a new log backup file name.
+func newBackupFileName(dir, name, ext string) string {
+	return filepath.Join(dir, name+"-"+time.Now().Local().Format(backupTimeFormat)+ext)
+}
+
+// Determines if the given filename is a log backup file.
+func isBackupFileName(target, base, name, ext string) bool {
+	if target == base || !strings.HasPrefix(target, name) {
+		return false
+	}
+	target = target[len(name):]
+	if !strings.HasSuffix(target, ext) {
+		return false
+	}
+	target = target[:len(target)-len(ext)]
+	if len(target) != len(backupTimeFormat) {
+		return false
+	}
+	if _, err := time.Parse(backupTimeFormat, target); err != nil {
+		return false
+	}
+	return true
 }
