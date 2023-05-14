@@ -29,7 +29,7 @@ import (
 const dirPerm os.FileMode = 0766
 const filePerm os.FileMode = 0666
 const fileFlag = os.O_WRONLY | os.O_CREATE | os.O_APPEND
-const backupTimeFormat = "2006-01-02T15:04:05.000"
+const backupTimeFormat = "2006-01-02T15-04-05.000"
 
 // NewFileWriter creates and returns an io.WriteCloser instance from the given path.
 // The max parameter is used to limit the maximum size of the log file, if it is 0, the
