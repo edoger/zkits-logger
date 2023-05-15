@@ -22,6 +22,7 @@ This is a zero-dependency standard JSON log library that supports structured JSO
  - Support log output to different writers by level.
  - Supports output interceptor to easily hijack and control log output.
  - Provides a log file writer that supports log file rotation by size.
+ - Can control the format and output writer of each log.
 
 According to the plan, this library will release 2 versions every year. 
 If there are new security issues or PRs, we will release new versions according to the actual situation.
@@ -316,8 +317,8 @@ The ``` FormatOutput ``` allows customizing the format and writer of each log.
     // The io.Writer in the interceptor parameter is the io.Writer instance bound by the logger.
     Logger.SetFormatOutput(FormatOutputFunc(func(e Entity, b *bytes.Buffer) (io.Writer, error) {
         // 1. Format the log and write to the buffer.
-		// 2. Determines and returns the writer to which the log needs to be written.
-		return os.Stdout, nil
+        // 2. Determines and returns the writer to which the log needs to be written.
+        return os.Stdout, nil
     })
 ```
 
