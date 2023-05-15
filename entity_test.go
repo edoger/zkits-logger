@@ -83,6 +83,13 @@ func TestLogEntityAndSummary(t *testing.T) {
 	if got := o.Stack(); len(got) != 1 || got[0] != "stack" {
 		t.Fatalf("Summary.Stack(): %s", got)
 	}
+	if got := o.Buffer(); got == nil || got.String() != "test" {
+		if got == nil {
+			t.Fatal("Summary.Buffer(): nil")
+		} else {
+			t.Fatalf("Summary.Bytes(): %s", got.String())
+		}
+	}
 	if got := o.Bytes(); !bytes.Equal(got, []byte("test")) {
 		t.Fatalf("Summary.Bytes(): %s", string(got))
 	}

@@ -63,6 +63,9 @@ type Entity interface {
 	// Stack returns the call stack information at the logging location.
 	// Returns nil if not enabled.
 	Stack() []string
+
+	// Buffer returns the entity buffer instance.
+	Buffer() *bytes.Buffer
 }
 
 // Summary interface defines the summary of the log.
@@ -174,6 +177,11 @@ func (o *logEntity) HasStack() bool {
 // Returns nil if not enabled.
 func (o *logEntity) Stack() []string {
 	return o.stack
+}
+
+// Buffer returns the entity buffer instance.
+func (o *logEntity) Buffer() *bytes.Buffer {
+	return &o.buffer
 }
 
 // Bytes returns the log content bytes.
