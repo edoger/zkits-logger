@@ -215,6 +215,7 @@ type core struct {
 	name          string
 	level         uint32
 	formatter     Formatter
+	formatOutput  FormatOutput
 	writer        io.Writer
 	levelWriter   map[Level]io.Writer
 	pool          sync.Pool
@@ -400,20 +401,28 @@ func (o *log) record(level Level, message string) {
 		entity.stack = internal.GetStack(o.core.stackPrefixes)
 	}
 
-	if err := o.core.formatter.Format(entity, &entity.buffer); err != nil {
-		// When the format log fails, we terminate the logging and report the error.
-		internal.EchoError("(%s) Failed to format log: %s", o.core.name, err)
+	var (
+		err error
+		w   io.Writer
+	)
+	if o.core.formatOutput == nil {
+		err = o.core.formatter.Format(entity, entity.Buffer())
 	} else {
+		w, err = o.core.formatOutput.Format(entity, entity.Buffer())
+	}
+	if err == nil {
 		if o.core.enableHooks {
 			err = o.core.hooks.Fire(entity)
 			if err != nil {
 				internal.EchoError("(%s) Failed to fire log hook: %s", o.core.name, err)
 			}
 		}
-		err = o.write(entity)
-		if err != nil {
+		if err = o.write(entity, w); err != nil {
 			internal.EchoError("(%s) Failed to write log: %s", o.core.name, err)
 		}
+	} else {
+		// When the format log fails, we terminate the logging and report the error.
+		internal.EchoError("(%s) Failed to format log: %s", o.core.name, err)
 	}
 
 	if level < ErrorLevel {
@@ -426,20 +435,31 @@ func (o *log) record(level Level, message string) {
 	}
 }
 
-// Write the current log.
-func (o *log) write(entity *logEntity) (err error) {
-	var w io.Writer
-	if writer, found := o.core.levelWriter[entity.level]; found && writer != nil {
-		w = writer
-	} else {
-		w = o.core.writer
+// Get the log writer.
+func (o *log) getWriter(entity *logEntity) io.Writer {
+	if len(o.core.levelWriter) > 0 {
+		w, found := o.core.levelWriter[entity.level]
+		if found && w != nil {
+			return w
+		}
 	}
+	return o.core.writer
+}
+
+// Write the current log.
+func (o *log) write(entity *logEntity, w io.Writer) (err error) {
 	if o.core.interceptor == nil {
 		// When there is no interceptor, make sure that the log written is not empty.
 		if entity.Size() > 0 {
+			if w == nil {
+				w = o.getWriter(entity)
+			}
 			_, err = w.Write(entity.Bytes())
 		}
 	} else {
+		if w == nil {
+			w = o.getWriter(entity)
+		}
 		_, err = o.core.interceptor(entity, w)
 	}
 	return

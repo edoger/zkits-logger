@@ -14,7 +14,12 @@
 
 package logger
 
-import "testing"
+import (
+	"bytes"
+	"errors"
+	"io"
+	"testing"
+)
 
 func TestUnimplementedFormatter(t *testing.T) {
 	var v any = new(UnimplementedFormatter)
@@ -25,5 +30,73 @@ func TestUnimplementedFormatter(t *testing.T) {
 		}
 	} else {
 		t.Fatal("UnimplementedFormatter: not is Formatter")
+	}
+}
+
+func TestFormatOutputFunc(t *testing.T) {
+	f := FormatOutputFunc(func(_ Entity, _ *bytes.Buffer) (io.Writer, error) {
+		return nil, errors.New("test")
+	})
+	if _, err := f.Format(nil, nil); err == nil {
+		t.Fatal("FormatOutputFunc.Format(): nil error")
+	} else {
+		if err.Error() != "test" {
+			t.Fatalf("FormatOutputFunc.Format(): %s", err)
+		}
+	}
+}
+
+func TestFormatOutput(t *testing.T) {
+	w := new(bytes.Buffer)
+	f := NewFormatOutput(FormatterFunc(func(e Entity, b *bytes.Buffer) error {
+		b.WriteString(e.Message())
+		return nil
+	}), w)
+	if f == nil {
+		t.Fatal("NewFormatOutput(): nil")
+	}
+
+	o := New("test")
+	o.SetFormatOutput(f)
+	o.SetLevel(TraceLevel)
+
+	o.Info("test")
+
+	if got := w.String(); got != "test" {
+		t.Fatalf("FormatOutput: %s", got)
+	}
+}
+
+func TestLevelPriorityFormatOutput(t *testing.T) {
+	w1 := new(bytes.Buffer)
+	w2 := new(bytes.Buffer)
+	f1 := NewFormatOutput(FormatterFunc(func(e Entity, b *bytes.Buffer) error {
+		b.WriteString(e.Message())
+		return nil
+	}), w1)
+	f2 := NewFormatOutput(FormatterFunc(func(e Entity, b *bytes.Buffer) error {
+		b.WriteString(e.Message())
+		return nil
+	}), w2)
+	if f1 == nil || f2 == nil {
+		t.Fatal("NewFormatOutput(): nil")
+	}
+	f := NewLevelPriorityFormatOutput(f1, f2)
+	if f == nil {
+		t.Fatal("NewLevelPriorityFormatOutput(): nil")
+	}
+
+	o := New("test")
+	o.SetFormatOutput(f)
+	o.SetLevel(TraceLevel)
+
+	o.Info("info")
+	o.Error("error")
+
+	if got := w1.String(); got != "error" {
+		t.Fatalf("LevelPriorityFormatOutput: %s", got)
+	}
+	if got := w2.String(); got != "info" {
+		t.Fatalf("LevelPriorityFormatOutput: %s", got)
 	}
 }

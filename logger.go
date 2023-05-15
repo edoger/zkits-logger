@@ -80,6 +80,12 @@ type Logger interface {
 	// If the given log formatter is nil, we will record the log in JSON format.
 	SetFormatter(Formatter) Logger
 
+	// SetFormatOutput sets the log format output.
+	// After setting the format output, the format and output of the logger will be controlled by this structure,
+	// and the bound log output and log level output will no longer be used.
+	// If format output needs to be disabled, set to nil and the logger will back to the original behavior.
+	SetFormatOutput(FormatOutput) Logger
+
 	// SetDefaultTimeFormat sets the default log time format for the current logger.
 	// If the given time format is empty string, internal.DefaultTimeFormat is used.
 	SetDefaultTimeFormat(string) Logger
@@ -171,7 +177,11 @@ func (o *logger) SetOutput(w io.Writer) Logger {
 // The level output writer is used to write log data of a given level.
 // If the given writer is nil, the level writer will be disabled.
 func (o *logger) SetLevelOutput(level Level, w io.Writer) Logger {
-	o.core.levelWriter[level] = w
+	if w == nil {
+		delete(o.core.levelWriter, level)
+	} else {
+		o.core.levelWriter[level] = w
+	}
 	return o
 }
 
@@ -237,6 +247,15 @@ func (o *logger) SetFormatter(formatter Formatter) Logger {
 	} else {
 		o.core.formatter = formatter
 	}
+	return o
+}
+
+// SetFormatOutput sets the log format output.
+// After setting the format output, the format and output of the logger will be controlled by this structure,
+// and the bound log output and log level output will no longer be used.
+// If format output needs to be disabled, set to nil and the logger will back to the original behavior.
+func (o *logger) SetFormatOutput(fo FormatOutput) Logger {
+	o.core.formatOutput = fo
 	return o
 }
 
