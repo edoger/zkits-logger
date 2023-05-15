@@ -308,6 +308,22 @@ as ``` io.Writer ```).
 > Once the output interceptor is enabled, we will no longer write logs to the log writer,
 > even if the interceptor returns an error.
 
+### Format Output ###
+
+The ``` FormatOutput ``` allows customizing the format and writer of each log.
+
+```go
+    // The io.Writer in the interceptor parameter is the io.Writer instance bound by the logger.
+    Logger.SetFormatOutput(FormatOutputFunc(func(e Entity, b *bytes.Buffer) (io.Writer, error) {
+        // 1. Format the log and write to the buffer.
+		// 2. Determines and returns the writer to which the log needs to be written.
+		return os.Stdout, nil
+    })
+```
+
+> After setting FormatOutput, the original log formatter will not be used, and when FormatOutput returns 
+> the writer is not nil, the original writer will not be used either.
+
 ### Log Context & Trace ###
 
 The log context is to support the trace technology. 
