@@ -191,3 +191,13 @@ func GetHighPriorityLevels() []Level {
 func GetLowPriorityLevels() []Level {
 	return []Level{WarnLevel, InfoLevel, DebugLevel, TraceLevel}
 }
+
+// IsHighPriorityLevel determines whether the given level is a high priority level.
+func IsHighPriorityLevel(level Level) bool {
+	return level >= PanicLevel && level <= ErrorLevel
+}
+
+// IsLowPriorityLevel determines whether the given level is a low priority level.
+func IsLowPriorityLevel(level Level) bool {
+	return level > ErrorLevel && level <= TraceLevel
+}

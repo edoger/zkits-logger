@@ -337,3 +337,47 @@ func TestGetLowPriorityLevels(t *testing.T) {
 		t.Fatalf("GetLowPriorityLevels(): %v", got)
 	}
 }
+
+func TestIsHighPriorityLevel(t *testing.T) {
+	items := []struct {
+		Given Level
+		Want  bool
+	}{
+		{PanicLevel, true},
+		{FatalLevel, true},
+		{ErrorLevel, true},
+		{WarnLevel, false},
+		{InfoLevel, false},
+		{DebugLevel, false},
+		{TraceLevel, false},
+		{Level(0), false},
+	}
+
+	for _, item := range items {
+		if got := IsHighPriorityLevel(item.Given); got != item.Want {
+			t.Fatalf("IsHighPriorityLevel(): want %v, got %v", item.Want, got)
+		}
+	}
+}
+
+func TestIsLowPriorityLevel(t *testing.T) {
+	items := []struct {
+		Given Level
+		Want  bool
+	}{
+		{PanicLevel, false},
+		{FatalLevel, false},
+		{ErrorLevel, false},
+		{WarnLevel, true},
+		{InfoLevel, true},
+		{DebugLevel, true},
+		{TraceLevel, true},
+		{Level(0), false},
+	}
+
+	for _, item := range items {
+		if got := IsLowPriorityLevel(item.Given); got != item.Want {
+			t.Fatalf("IsLowPriorityLevel(): want %v, got %v", item.Want, got)
+		}
+	}
+}
