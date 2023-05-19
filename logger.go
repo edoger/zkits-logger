@@ -99,6 +99,13 @@ type Logger interface {
 	// EnableLevelsCaller enables caller reporting on logs of the given levels.
 	EnableLevelsCaller([]Level, ...int) Logger
 
+	// SetCallerSkip sets a fixed number of skipped callers.
+	// This method only takes effect for the log with caller enabled.
+	SetCallerSkip(int) Logger
+
+	// SetLongCaller sets whether to enable or disable long caller name (with parent directory name).
+	SetLongCaller(long bool) Logger
+
 	// AddHook adds the given log hook to the current logger.
 	AddHook(Hook) Logger
 
@@ -287,6 +294,22 @@ func (o *logger) EnableLevelCaller(level Level, skip ...int) Logger {
 		n = skip[0]
 	}
 	o.core.levelCaller[level] = internal.NewCallerReporter(n)
+	return o
+}
+
+// SetCallerSkip sets a fixed number of skipped callers.
+// This method only takes effect for the log with caller enabled.
+func (o *logger) SetCallerSkip(skip int) Logger {
+	if skip < 0 {
+		skip = 0
+	}
+	o.core.callerSkip = skip
+	return o
+}
+
+// SetLongCaller sets whether to enable or disable long caller name (with parent directory name).
+func (o *logger) SetLongCaller(long bool) Logger {
+	o.core.callerLong = long
 	return o
 }
 

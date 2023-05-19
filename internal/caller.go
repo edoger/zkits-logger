@@ -48,9 +48,14 @@ func (o *CallerReporter) Skip() int {
 
 // GetCaller reports file and line number information about function invocations on
 // the calling goroutine's stack.
-func GetCaller(skipped int) string {
+func GetCaller(skipped int, long bool) string {
 	if _, file, line, ok := runtime.Caller(skipped + KnownCallerDepth); ok {
-		return filepath.Base(file) + ":" + strconv.Itoa(line)
+		if base := filepath.Base(file); long {
+			// Only the parent directory is added.
+			return filepath.Join(filepath.Base(filepath.Dir(file)), base) + ":" + strconv.Itoa(line)
+		} else {
+			return base + ":" + strconv.Itoa(line)
+		}
 	}
 	return "???:0"
 }

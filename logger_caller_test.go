@@ -130,3 +130,57 @@ func TestLogger_WithCaller_Skip(t *testing.T) {
 		t.Fatalf("Logger caller: %s", got)
 	}
 }
+
+func TestLogger_SetCallerSkip(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+	o.SetCallerSkip(4)
+
+	with := false
+	f := func() {
+		if with {
+			o.WithCaller(1).Debug("debug")
+		} else {
+			o.Debug("debug")
+		}
+	}
+	f1 := func() { f() }
+	f2 := func() { f1() }
+	f3 := func() { f2() }
+	f4 := func() { f3() }
+	f4() // LINE 153
+
+	if got := w.String(); strings.Contains(got, "logger_caller_test.go:153") {
+		t.Fatalf("Logger caller: %s", got)
+	}
+
+	with = true
+	w.Reset()
+	f4() // LINE 161
+	if got := w.String(); !strings.Contains(got, "logger_caller_test.go:161") {
+		t.Fatalf("Logger caller: %s", got)
+	}
+}
+
+func TestLogger_SetLongCaller(t *testing.T) {
+	w := new(bytes.Buffer)
+	o := New("test")
+	o.SetOutput(w)
+	o.SetLevel(TraceLevel)
+	o.SetFormatter(FormatterFunc(func(e Entity, b *bytes.Buffer) error {
+		b.WriteString(e.Caller())
+		return nil
+	}))
+
+	f1 := func() { o.WithCaller(4).Debug("debug") }
+	f2 := func() { f1() }
+	f3 := func() { f2() }
+	f4 := func() { f3() }
+	f4() // LINE 181
+
+	if got := w.String(); !strings.HasSuffix(got, "logger_caller_test.go:181") {
+		t.Fatalf("Logger caller: %s", got)
+	}
+}

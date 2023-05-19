@@ -226,6 +226,8 @@ type core struct {
 	exitFunc      func(int)
 	panicFunc     func(string)
 	caller        *internal.CallerReporter
+	callerSkip    int
+	callerLong    bool
 	levelCaller   map[Level]*internal.CallerReporter
 	interceptor   func(Summary, io.Writer) (int, error)
 	stackPrefixes []string
@@ -470,20 +472,20 @@ func (o *log) write(entity *logEntity, w io.Writer) (err error) {
 func (o *log) getCaller(level Level) string {
 	if o.caller == nil {
 		if caller, found := o.core.levelCaller[level]; found {
-			return internal.GetCaller(caller.Skip())
+			return internal.GetCaller(caller.Skip()+o.core.callerSkip, o.core.callerLong)
 		}
 		if o.core.caller != nil {
-			return internal.GetCaller(o.core.caller.Skip())
+			return internal.GetCaller(o.core.caller.Skip()+o.core.callerSkip, o.core.callerLong)
 		}
 		return ""
 	}
 	if caller, found := o.core.levelCaller[level]; found {
-		return internal.GetCaller(caller.Skip() + o.caller.Skip())
+		return internal.GetCaller(caller.Skip()+o.caller.Skip()+o.core.callerSkip, o.core.callerLong)
 	}
 	if o.core.caller != nil {
-		return internal.GetCaller(o.core.caller.Skip() + o.caller.Skip())
+		return internal.GetCaller(o.core.caller.Skip()+o.caller.Skip()+o.core.callerSkip, o.core.callerLong)
 	}
-	return internal.GetCaller(o.caller.Skip())
+	return internal.GetCaller(o.caller.Skip()+o.core.callerSkip, o.core.callerLong)
 }
 
 // IsLevelEnabled checks whether the given log level is enabled.

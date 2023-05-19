@@ -15,23 +15,42 @@
 package internal
 
 import (
+	"strings"
 	"testing"
 )
 
 func TestGetCaller(t *testing.T) {
-	f1 := func() string { return GetCaller(1) }
+	f1 := func() string { return GetCaller(1, false) }
 	f2 := func() string { return f1() }
 	f3 := func() string { return f2() }
 	f4 := func() string { return f3() }
 	f5 := func() string { return f4() }
 
-	got := f5() // Line 28
-	if want := "caller_caller_test.go:28"; got != want {
-		t.Fatalf("CallerReporter.GetCaller(): got %q, want %q", got, want)
+	got := f5() // Line 29
+	if want := "caller_caller_test.go:29"; got != want {
+		t.Fatalf("GetCaller(): got %q, want %q", got, want)
 	}
 
-	got = GetCaller(0)
+	got = GetCaller(0, false)
 	if want := "???:0"; got != want {
-		t.Fatalf("CallerReporter.GetCaller(): got %q, want %q", got, want)
+		t.Fatalf("GetCaller(): got %q, want %q", got, want)
+	}
+}
+
+func TestGetCaller_Long(t *testing.T) {
+	f1 := func() string { return GetCaller(1, true) }
+	f2 := func() string { return f1() }
+	f3 := func() string { return f2() }
+	f4 := func() string { return f3() }
+	f5 := func() string { return f4() }
+
+	got := f5() // Line 47
+	if want := "caller_caller_test.go:47"; !strings.HasSuffix(got, want) {
+		t.Fatalf("GetCaller(): got %q", got)
+	}
+
+	got = GetCaller(0, true)
+	if want := "???:0"; got != want {
+		t.Fatalf("GetCaller(): got %q, want %q", got, want)
 	}
 }
